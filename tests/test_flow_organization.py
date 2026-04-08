@@ -28,10 +28,18 @@ class TestOrganizationFlow:
         
         assert route_result.task_type == "ORGANIZE"
         
-        # 4. Bước Agent 2: FileOrganizer (Phân loại vào Taxonomy)
-        organizer = FileOrganizerAgent()
-        # Lấy chunk đầu tiên của Excel để phân loại
-        org_result = organizer.organize_files(chunks, "Phân loại theo quy định dự án")
+        # 4. Keyword Extractor
+        from core.agents.keyword_extractor import KeywordExtractorAgent
+        kw_extractor = KeywordExtractorAgent()
+        kw_result = kw_extractor.extract_keywords(chunks[0].content)
+        assert len(kw_result.keywords) > 0
         
-        assert len(org_result.assignments) > 0
-        print(f"\n✅ Luồng Organization OK. File được xếp vào: {org_result.assignments[0].folder_name}")
+        keywords_str = ", ".join(kw_result.keywords)
+        enhanced_file_list = [f"bang_tien_do.xlsx (Keywords: {keywords_str})"]
+        
+        # 5. Bước Agent 2: FileOrganizer (Phân loại vào Taxonomy)
+        organizer = FileOrganizerAgent()
+        org_result = organizer.organize_files("Phân loại theo quy định dự án", enhanced_file_list)
+        
+        assert len(org_result.thought_log) > 0
+        print(f"\n✅ Luồng Organization OK. AI suy luận:\n{org_result.thought_log[:100]}...")

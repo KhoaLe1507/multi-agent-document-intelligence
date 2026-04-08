@@ -13,6 +13,14 @@ class TaskRoutingResult(BaseModel):
         description="Giải thích ngắn gọn lý do tại sao lại phân loại task này vào nhóm trên."
     )
 
+class KeywordExtractResult(BaseModel):
+    """Output của KeywordExtractorAgent: Sinh ra các Keyword đại diện cho nội dung tài liệu."""
+    keywords: List[str] = Field(
+        ...,
+        description="Danh sách các từ khóa, các ý chính hoặc tóm tắt cấu trúc tài liệu lấy được từ chunk này."
+    )
+
+
 class PlannerResult(BaseModel):
     """Output của PlannerAgent: Kế hoạch tác chiến cho đàn em."""
     extraction_guidelines: str = Field(
@@ -58,12 +66,20 @@ class OrganizeResult(BaseModel):
     )
 
 class FileLocatorResult(BaseModel):
-    """Output của FileLocatorAgent: Nhận diện đúng file cần xử lý."""
+    """Output của FileLocatorAgent: Nhận diện đúng file cần xử lý hoặc yêu cầu thêm dữ liệu."""
     target_file_names: list[str] = Field(
         ..., 
-        description="Danh sách tên các file (file_name) khớp với yêu cầu tìm kiếm của đề bài. Trả về mảng rỗng nếu không có file nào khớp."
+        description="Các file đã chắc chắn được chọn. Nếu còn phân vân, KHÔNG cho file đó vào mảng này."
     )
     reasoning: str = Field(
         ..., 
-        description="Giải thích lý do tại sao lại chọn (các) file này."
+        description="Giải thích lý do tại sao lại chọn (các) file này hoặc lý do cần thêm thông tin."
+    )
+    requires_more_info: bool = Field(
+        False,
+        description="Báo hiệu True nếu có bất kỳ file nào chưa thể xác định được (do trang hiện tại là trang bìa, mục lục, bảng trống, v.v) và cần nạp thêm trang/chunk tiếp theo để phân tích."
+    )
+    files_needing_more_chunks: List[str] = Field(
+        default_factory=list,
+        description="Danh sách tên các file cụ thể cần hệ thống nạp thêm trang/chunk kế tiếp (nếu requires_more_info = True)."
     )

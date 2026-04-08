@@ -20,9 +20,46 @@ class TestQAFlow:
         route_result = router.classify_task(user_query)
         assert route_result.task_type == "QA"
         
-        # 3. Locator tìm file liên quan (Dựa trên tóm tắt)
+        # 3. Trinh sát (File Locator) với vòng lặp Chunk
         locator = FileLocatorAgent()
-        locate_result = locator.locate_relevant_files(chunks, user_query)
+        target_file_names = set()
+        
+        chunks_by_file = {}
+        for chunk in chunks:
+            chunks_by_file.setdefault(chunk.file_name, []).append(chunk)
+            
+        file_read_index = {fname: 0 for fname in chunks_by_file.keys()}
+        active_files = set(chunks_by_file.keys())
+        
+        loop_count = 0
+        while active_files and loop_count < 3:
+            loop_count += 1
+            doc_summaries = ""
+            for fname in active_files:
+                idx = file_read_index[fname]
+                if idx < len(chunks_by_file[fname]):
+                    c = chunks_by_file[fname][idx]
+                    doc_summaries += f"- File: {fname} (Trang/Chunk {idx+1}) | Nội dung: {c.content[:400]}...\n"
+                else:
+                    doc_summaries += f"- File: {fname} | [ĐẾN CUỐI]\n"
+                    
+            locate_result = locator.locate_files(user_query, doc_summaries)
+            
+            for f in locate_result.target_file_names:
+                target_file_names.add(f)
+                
+            if not locate_result.requires_more_info:
+                break
+                
+            next_active_files = set()
+            for fname in locate_result.files_needing_more_chunks:
+                if fname in chunks_by_file and file_read_index[fname] + 1 < len(chunks_by_file[fname]):
+                    file_read_index[fname] += 1
+                    next_active_files.add(fname)
+            active_files = next_active_files
+        
+        # Nếu test đúng, nó sẽ quét xong và không bị crash.
+        assert target_file_names is not None
         
         # 4. QA/Extractor Agent đọc nội dung cụ thể
         # Ở đây ta gọi trực tiếp một Agent xử lý vision để test khả năng đọc

@@ -43,19 +43,55 @@ class QAWorkflow:
                 agent_logger.error(f"Bỏ qua file lỗi {file_path}: {e}")
 
         # --- BƯỚC 3: TRINH SÁT (FILE LOCATOR) ---
-        doc_summaries = ""
-        processed_files = set()
+        target_file_names = set()
+        
+        # Tạo mapping file_name -> list_of_chunks
+        chunks_by_file = {}
         for chunk in all_chunks:
-            if chunk.file_name not in processed_files:
-                doc_summaries += f"- File: {chunk.file_name} | Đoạn đầu: {chunk.content[:300]}...\n"
-                processed_files.add(chunk.file_name)
-                
+            chunks_by_file.setdefault(chunk.file_name, []).append(chunk)
+            
+        # Khởi tạo context đọc (bắt đầu bằng index 0 cho mỗi file)
+        file_read_index = {fname: 0 for fname in chunks_by_file.keys()}
+        active_files = set(chunks_by_file.keys())  # Các file cần phân tích
+        
+        max_locator_loops = 5
+        loop_count = 0
+        
         agent_logger.info("🔭 Trinh sát đang quét mục tiêu...")
-        locator_result = self.locator.locate_files(task.prompt_template, doc_summaries)
-        agent_logger.info(f"🎯 Mục tiêu đã khóa: {locator_result.target_file_names}")
+        
+        while active_files and loop_count < max_locator_loops:
+            loop_count += 1
+            doc_summaries = ""
+            for fname in active_files:
+                idx = file_read_index[fname]
+                if idx < len(chunks_by_file[fname]):
+                    chunk = chunks_by_file[fname][idx]
+                    doc_summaries += f"- File: {fname} (Trang/Chunk {idx+1}) | Nội dung: {chunk.content[:400]}...\n"
+                else:
+                    doc_summaries += f"- File: {fname} | [ĐÃ HẾT NỘI DUNG TÀI LIỆU]\n"
+            
+            locator_result = self.locator.locate_files(task.prompt_template, doc_summaries)
+            
+            # Gộp các file target mà Agent đã chắc chắn
+            for f in locator_result.target_file_names:
+                target_file_names.add(f)
+            
+            if not locator_result.requires_more_info:
+                break
+                
+            # Cập nhật danh sách các file cần đọc thêm ở vòng lặp sau
+            next_active_files = set()
+            for fname in locator_result.files_needing_more_chunks:
+                if fname in chunks_by_file and file_read_index[fname] + 1 < len(chunks_by_file[fname]):
+                    file_read_index[fname] += 1
+                    next_active_files.add(fname)
+                    
+            active_files = next_active_files
+            
+        agent_logger.info(f"🎯 Mục tiêu đã khóa: {list(target_file_names)}")
         
         # Lọc chunk theo mục tiêu (Fallback nếu trinh sát xịt)
-        target_chunks = [c for c in all_chunks if c.file_name in locator_result.target_file_names]
+        target_chunks = [c for c in all_chunks if c.file_name in target_file_names]
         if not target_chunks:
             target_chunks = all_chunks
 
