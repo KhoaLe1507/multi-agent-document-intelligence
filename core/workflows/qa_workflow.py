@@ -58,19 +58,52 @@ class QAWorkflow:
         loop_count = 0
         
         agent_logger.info("🔭 Trinh sát đang quét mục tiêu...")
+        full_thought_logs = []
         
         while active_files and loop_count < max_locator_loops:
             loop_count += 1
-            doc_summaries = ""
+            
+            # Khởi tạo mảng content blocks hỗ trợ Vision
+            user_content_blocks = [
+                {"type": "text", "text": f"<Yêu cầu của Đề bài>\n{task.prompt_template}\n\n<Danh sách Tài liệu và Nội dung hiện tại>\n"}
+            ]
+
             for fname in active_files:
                 idx = file_read_index[fname]
                 if idx < len(chunks_by_file[fname]):
                     chunk = chunks_by_file[fname][idx]
-                    doc_summaries += f"- File: {fname} (Trang/Chunk {idx+1}) | Nội dung: {chunk.content[:400]}...\n"
+                    
+                    if chunk.chunk_type == "image":
+                        user_content_blocks.append({
+                            "type": "text",
+                            "text": f"\n- File: {fname} (Trang/Chunk {idx+1}) | Nội dung Hình ảnh đính kèm:"
+                        })
+                        user_content_blocks.append({
+                            "type": "image_url",
+                            "image_url": {
+                                "url": f"data:image/jpeg;base64,{chunk.content}",
+                                "detail": "auto" 
+                            }
+                        })
+                    else:
+                        text_excerpt = chunk.content[:1500]
+                        user_content_blocks.append({
+                            "type": "text",
+                            "text": f"\n- File: {fname} (Trang/Chunk {idx+1}) | Nội dung Văn bản:\n{text_excerpt}..."
+                        })
                 else:
-                    doc_summaries += f"- File: {fname} | [ĐÃ HẾT NỘI DUNG TÀI LIỆU]\n"
+                    user_content_blocks.append({
+                        "type": "text",
+                        "text": f"\n- File: {fname} | [ĐÃ HẾT NỘI DUNG TÀI LIỆU]"
+                    })
+                    
+            user_content_blocks.append({
+                "type": "text",
+                "text": "\nPhân tích nội dung các trang tài liệu phía trên.\nHãy xác định những file nào chắc chắn cần thiết, những file nào chắc chắn loại, và những file nào cần đọc thêm trang kế tiếp."
+            })
             
-            locator_result = self.locator.locate_files(task.prompt_template, doc_summaries)
+            locator_result = self.locator.locate_files_advanced(user_content_blocks)
+            full_thought_logs.append(f"[FileLocator - Lần {loop_count}]: {locator_result.reasoning}")
             
             # Gộp các file target mà Agent đã chắc chắn
             for f in locator_result.target_file_names:
@@ -97,6 +130,7 @@ class QAWorkflow:
 
         # --- BƯỚC 4: LÊN KẾ HOẠCH ---
         plan = self.planner.create_extraction_plan(task.prompt_template)
+        full_thought_logs.append(f"[Planner]: {plan.thought_log}")
         
         # --- BƯỚC 5: XẠ THỦ TRÍCH XUẤT ---
         extracted_pieces = []
@@ -104,6 +138,7 @@ class QAWorkflow:
             agent_logger.debug(f"🕵️ Đang soi chunk {idx + 1}/{len(target_chunks)}...")
             try:
                 result = self.extractor.extract_from_chunk(chunk, plan.extraction_guidelines, plan.target_keywords)
+                full_thought_logs.append(f"[Extractor - {chunk.file_name} Trang {idx+1}]: {result.thought_log}")
                 if result.found_information and result.extracted_data:
                     extracted_pieces.append({
                         "data": result.extracted_data,
@@ -115,11 +150,12 @@ class QAWorkflow:
 
         # --- BƯỚC 6: TỔNG HỢP & NỘP BÀI ---
         final_result = self.synthesizer.synthesize_final_answer(task.prompt_template, extracted_pieces)
+        full_thought_logs.append(f"[Synthesizer]: {final_result.thought_log}")
         
         submit_response = self.provider.submit_task(
             task_id=task.task_id,
             answers=final_result.final_answers,
-            thought_log=final_result.thought_log,
+            thought_log="\n".join(full_thought_logs),
             used_tools=["FileLocator", "Planner", "Extractor", "Synthesizer"]
         )
         agent_logger.info(f"📤 Đã nộp bài QA! Server: {submit_response}")

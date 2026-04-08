@@ -24,19 +24,35 @@ class BaseAgent:
     def call_llm(
         self, 
         system_prompt: str, 
-        user_prompt: str, 
-        response_model: Optional[Type[T]] = None
+        user_prompt: str | list, 
+        response_model: Optional[Type[T]] = None,
+        image_base64: Optional[str] = None
     ) -> T | str:
         """
         Gọi OpenAI API. 
-        Nếu truyền response_model (Pydantic Class), nó sẽ trả về Object.
-        Nếu không, nó trả về text thuần.
+        Nếu có image_base64, nó sẽ được gửi dưới dạng Vision content block.
+        Nếu user_prompt là list, nó sẽ truyền thô mảng content block đó (hỗ trợ gom nhóm text và ảnh).
         """
         agent_logger.debug(f"[{self.agent_name}] Đang phân tích...")
         
+        if isinstance(user_prompt, str):
+            user_content = []
+            user_content.append({"type": "text", "text": user_prompt})
+            
+            if image_base64:
+                user_content.append({
+                    "type": "image_url",
+                    "image_url": {
+                        "url": f"data:image/jpeg;base64,{image_base64}",
+                        "detail": "high" # Đảm bảo độ phân giải tốt nhất cho OCR
+                    }
+                })
+        else:
+            user_content = user_prompt
+        
         messages = [
             {"role": "system", "content": system_prompt},
-            {"role": "user", "content": user_prompt}
+            {"role": "user", "content": user_content}
         ]
 
         try:

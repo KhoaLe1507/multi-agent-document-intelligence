@@ -15,6 +15,10 @@ class TaskRoutingResult(BaseModel):
 
 class KeywordExtractResult(BaseModel):
     """Output của KeywordExtractorAgent: Sinh ra các Keyword đại diện cho nội dung tài liệu."""
+    thought_log: str = Field(
+        ...,
+        description="Giải thích ngắn gọn tại sao lại chọn các keyword này."
+    )
     keywords: List[str] = Field(
         ...,
         description="Danh sách các từ khóa, các ý chính hoặc tóm tắt cấu trúc tài liệu lấy được từ chunk này."
@@ -23,6 +27,10 @@ class KeywordExtractResult(BaseModel):
 
 class PlannerResult(BaseModel):
     """Output của PlannerAgent: Kế hoạch tác chiến cho đàn em."""
+    thought_log: str = Field(
+        ...,
+        description="Toàn bộ tư duy phân tích: tài liệu này chứa những gì? Cần tìm ở đâu? Mục tiêu cụ thể là gì?"
+    )
     extraction_guidelines: str = Field(
         ..., 
         description="Hướng dẫn chi tiết, từng bước một để Extractor Agent biết cách tìm kiếm thông tin trong tài liệu."
@@ -34,6 +42,10 @@ class PlannerResult(BaseModel):
 
 class ExtractionResult(BaseModel):
     """Output của ExtractorAgent (Công nhân): Kết quả cào dữ liệu từ 1 chunk."""
+    thought_log: str = Field(
+        ...,
+        description="Quá trình soi các chi tiết trong chunk: Đã thấy gì? Tại sao lại hữu ích hay không hữu ích?"
+    )
     found_information: bool = Field(
         ..., 
         description="True nếu tìm thấy thông tin hữu ích đáp ứng được yêu cầu của đề bài, False nếu chunk này không chứa thông tin liên quan."

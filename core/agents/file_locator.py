@@ -15,3 +15,11 @@ class FileLocatorAgent(BaseAgent):
             user_prompt=user_prompt,
             response_model=FileLocatorResult
         )
+
+    def locate_files_advanced(self, content_blocks: list) -> FileLocatorResult:
+        """Sử dụng mảng content_blocks để gửi trực tiếp cho LLM hỗ trợ Vision."""
+        return self.call_llm(
+            system_prompt=LOCATOR_SYSTEM_PROMPT,
+            user_prompt=content_blocks,
+            response_model=FileLocatorResult
+        )

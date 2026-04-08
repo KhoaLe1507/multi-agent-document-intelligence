@@ -34,6 +34,7 @@ class OrganizeWorkflow:
 
         # --- BƯỚC 2: CHẾ BIẾN DỮ LIỆU & LẤY KEYWORD ---
         enhanced_file_list = []
+        full_thought_logs = []
         
         for file_info in local_files:
             file_path = file_info["path"]
@@ -46,6 +47,10 @@ class OrganizeWorkflow:
                 # Gom nội dung các chunks lại để trích xuất keyword
                 all_text = ""
                 for chunk in chunks:
+                    if chunk.chunk_type == "image":
+                        # Chừa lại placeholder hoặc có thể bổ sung OCR mini ở đây sau
+                        # Hiện tại skip base64 để tránh lỗi context limit 300k tokens
+                        continue
                     all_text += f"\n{chunk.content}"
                 
                 if not all_text.strip():
@@ -57,6 +62,7 @@ class OrganizeWorkflow:
                 
                 agent_logger.info(f"🔎 Đang nạp {file_name} vào KeywordExtractor...")
                 kw_result = self.keyword_extractor.extract_keywords(all_text)
+                full_thought_logs.append(f"[KeywordExtractor - {file_name}]: {kw_result.thought_log}")
                 
                 keywords_str = ", ".join(kw_result.keywords)
                 enhanced_item = f"{file_name} (Tóm tắt nội dung/Keyword: {keywords_str})"
@@ -72,12 +78,13 @@ class OrganizeWorkflow:
         # --- BƯỚC 3: PHÂN LOẠI THƯ MỤC ---
         agent_logger.info("🧠 Đang suy luận cách phân bổ thư mục...")
         result = self.organizer.organize_files(task.prompt_template, enhanced_file_list)
+        full_thought_logs.append(f"[FileOrganizer]: {result.thought_log}")
         
         # Nộp bài
         submit_response = self.provider.submit_task(
             task_id=task.task_id,
             answers=[],  
-            thought_log=result.thought_log,
+            thought_log="\n".join(full_thought_logs),
             used_tools=["KeywordExtractor", "FileOrganizer"]
         )
         agent_logger.info(f"📤 Đã nộp bài Organize! Server: {submit_response}")

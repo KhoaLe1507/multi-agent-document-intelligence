@@ -34,16 +34,40 @@ class TestQAFlow:
         loop_count = 0
         while active_files and loop_count < 3:
             loop_count += 1
-            doc_summaries = ""
+            user_content_blocks = [
+                {"type": "text", "text": f"<Yêu cầu của Đề bài>\n{user_query}\n\n<Danh sách Tài liệu và Nội dung hiện tại>\n"}
+            ]
             for fname in active_files:
                 idx = file_read_index[fname]
                 if idx < len(chunks_by_file[fname]):
                     c = chunks_by_file[fname][idx]
-                    doc_summaries += f"- File: {fname} (Trang/Chunk {idx+1}) | Nội dung: {c.content[:400]}...\n"
+                    if c.chunk_type == "image":
+                        user_content_blocks.append({
+                            "type": "text",
+                            "text": f"\n- File: {fname} (Trang/Chunk {idx+1}) | Nội dung Hình ảnh đính kèm:"
+                        })
+                        user_content_blocks.append({
+                            "type": "image_url",
+                            "image_url": {
+                                "url": f"data:image/jpeg;base64,{c.content}",
+                                "detail": "auto" 
+                            }
+                        })
+                    else:
+                        text_excerpt = c.content[:1500]
+                        user_content_blocks.append({
+                            "type": "text",
+                            "text": f"\n- File: {fname} (Trang/Chunk {idx+1}) | Nội dung Văn bản:\n{text_excerpt}..."
+                        })
                 else:
-                    doc_summaries += f"- File: {fname} | [ĐẾN CUỐI]\n"
+                    user_content_blocks.append({"type": "text", "text": f"\n- File: {fname} | [ĐẾN CUỐI]\n"})
+            
+            user_content_blocks.append({
+                "type": "text",
+                "text": "\nPhân tích nội dung. Hãy xác định những file nào chắc chắn cần thiết, chắc chắn loại, và cần đọc thêm trang kế tiếp."
+            })
                     
-            locate_result = locator.locate_files(user_query, doc_summaries)
+            locate_result = locator.locate_files_advanced(user_content_blocks)
             
             for f in locate_result.target_file_names:
                 target_file_names.add(f)

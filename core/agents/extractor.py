@@ -11,8 +11,15 @@ class ExtractorAgent(BaseAgent):
         super().__init__(agent_name="Extractor", temperature=settings.TEMP_EXTRACTOR)
 
     def extract_from_chunk(self, chunk: DocumentChunk, guidelines: str, keywords: list[str]) -> ExtractionResult:
+        is_image = chunk.chunk_type == "image"
+        
+        # Nếu là ảnh, ta không đưa nội dung Base64 vào chuỗi prompt text (để tránh lỗi token)
+        # Thay vào đó, ta truyền riêng cho BaseAgent xử lý Vision.
+        content_for_prompt = "[Nội dung Hình ảnh: Xem đính kèm]" if is_image else chunk.content
+        image_to_send = chunk.content if is_image else None
+
         user_prompt = get_extractor_user_prompt(
-            chunk_content=chunk.content,
+            chunk_content=content_for_prompt,
             chunk_context=chunk.get_context_description(),
             guidelines=guidelines,
             keywords=keywords
@@ -21,5 +28,6 @@ class ExtractorAgent(BaseAgent):
         return self.call_llm(
             system_prompt=EXTRACTOR_SYSTEM_PROMPT,
             user_prompt=user_prompt,
-            response_model=ExtractionResult
+            response_model=ExtractionResult,
+            image_base64=image_to_send
         )
