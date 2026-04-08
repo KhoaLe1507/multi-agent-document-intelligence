@@ -24,7 +24,7 @@ def main():
         
         # 4. Kích hoạt vòng lặp thi đấu tự động
         # (Nếu đang test, bạn có thể gọi pipeline.process_single_task() thay vì run_continuous)
-        pipeline.process_single_task()
+        pipeline.run_continuous()
         
     except Exception as e:
         agent_logger.critical(f"💥 Hệ thống sập do lỗi ở cấp cao nhất: {e}")
