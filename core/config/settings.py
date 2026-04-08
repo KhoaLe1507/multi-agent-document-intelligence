@@ -11,6 +11,7 @@ class Settings(BaseSettings):
     # --- 2. Cấu hình OpenAI ---
     OPENAI_API_KEY: str = Field(..., description="API Key của OpenAI")
     GPT_MODEL_NAME: str = Field(default="gpt-4o-2024-08-06", description="Phiên bản model 4o chuẩn nhất hiện tại")
+    OPENAI_BASE_URL: str = "https://api.openai.com/v1"
     
     # --- 3. Cấu hình "Nhiệt độ" (Temperature) cho từng Agent ---
     TEMP_ROUTER: float = Field(default=0.0, description="Router cần tính logic tuyệt đối")

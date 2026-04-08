@@ -14,7 +14,9 @@ class BaseAgent:
     
     def __init__(self, agent_name: str, temperature: float):
         self.agent_name = agent_name
-        self.client = OpenAI(api_key=settings.OPENAI_API_KEY)
+        self.client = OpenAI(
+            api_key=settings.OPENAI_API_KEY      
+        )
         self.model = settings.GPT_MODEL_NAME
         self.temperature = temperature
 
@@ -43,7 +45,6 @@ class BaseAgent:
                 response = self.client.beta.chat.completions.parse(
                     model=self.model,
                     messages=messages,
-                    temperature=self.temperature,
                     response_format=response_model
                 )
                 agent_logger.success(f"[{self.agent_name}] Đã xuất dữ liệu chuẩn (Structured Output).")
@@ -52,7 +53,6 @@ class BaseAgent:
                 response = self.client.chat.completions.create(
                     model=self.model,
                     messages=messages,
-                    temperature=self.temperature
                 )
                 agent_logger.success(f"[{self.agent_name}] Đã sinh xong phản hồi text.")
                 return response.choices[0].message.content
