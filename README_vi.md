@@ -24,7 +24,7 @@ Sau khi **TaskRouterAgent** phân loại đề bài, Task sẽ đi vào 1 trong 
 *Mục tiêu: Đọc nội dung file, đánh giá "nhãn" và sắp xếp file vào đúng thư mục Taxonomy yêu cầu.*
 
 1. **Tải & Parse:** Tải file về và băm nhỏ thành các Chunks văn bản/hình ảnh (`DocumentChunk`).
-2. **Trích xuất Từ Khóa (Keyword Extraction):** `KeywordExtractorAgent` đọc siêu tốc nội dung các Text Chunks để tóm lược thành các cụm từ khóa (Keywords) cốt lõi mô tả file, nhằm tối ưu hóa độ dài ngữ cảnh.
+2. **Trích xuất Từ Khóa Đa Luồng (Keyword Extraction):** Được tối ưu bằng thư viện **`ThreadPoolExecutor`**, hệ thống phân phối vòng lặp `KeywordExtractorAgent` chạy đa luồng (**Multi-threading** lên tới 5 threads). Cùng một lúc, nó nạp nhiều files vào LLM để rút Keyword cực nhanh, đập tan độ trễ $O(N)$ của mô hình tuần tự.
 3. **Phân loại Thông minh:** `FileOrganizerAgent` nhận một danh sách file kèm theo bộ Keywords tương ứng. Dựa vào yêu cầu (Prompt) của đề bài, Agent phân bổ file vào đúng thư mục hợp lý một cách khách quan nhất.
 4. **Nộp bài (Submit):** Trả về server thư mục tương ứng + Lưu lại quá trình suy luận dán nhãn (`thought_log`).
 
@@ -36,7 +36,7 @@ Sau khi **TaskRouterAgent** phân loại đề bài, Task sẽ đi vào 1 trong 
    - `FileLocatorAgent` áp dụng kỹ thuật **Vision Batching**, gom hàng loạt ảnh trang đầu tiên của nhiều file khác nhau để LLM "nhìn" trực tiếp bằng hệ thị giác quang học trong một Request duy nhất.
    - **Vòng lặp (Iterative Loop):** Nếu Agent phát hiện thông tin trang đầu bị thiếu (ví dụ: chỉ có trang bìa), cờ hiệu `requires_more_info = True` báo cho hệ thống tự động nạp nối tiếp trang/chunk kế tiếp đến khi chốt được chính xác file mục tiêu.
 3. **Chiến lược (Planner):** `PlannerAgent` dịch đề bài thành các hướng dẫn và Hint cào dữ liệu.
-4. **Xạ Thủ Trích Xuất (Extractor):** `ExtractorAgent` hoạt động như công nhân OCR, nhận lệnh từ Planner và soi chi tiết nội dung của từng Chunk (bảng biểu/hình ảnh) để móc dữ liệu.
+4. **Xạ Thủ Trích Xuất Đa Luồng (Parallel Extractor):** `ExtractorAgent` hoạt động như những công nhân OCR độc lập. Dựa trên `ThreadPoolExecutor`, hệ thống đẩy cùng lúc nhiều chunk/ảnh (parallel extraction) lên LLM để móc dữ liệu, giúp rút ngắn thời gian soi chi tiết về mức $O(1)$.
 5. **Tổng Hợp (Synthesizer):** `SynthesizerAgent` kết nối các bằng chứng thô và sắp xếp lại đáp án chuẩn format định dạng đầu ra.
 6. **Nộp bài (Submit):** Hệ thống gộp toàn bộ Nhật ký tư duy (`thought_log`) từ Trinh sát -> Lên kế hoạch -> Xạ thủ -> Tổng hợp... và bắn thẳng lên server để lưu lại logic hành trình cực kì rành mạch.
 

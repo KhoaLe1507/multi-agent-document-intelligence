@@ -36,44 +36,46 @@ class OrganizeWorkflow:
         enhanced_file_list = []
         full_thought_logs = []
         
-        for file_info in local_files:
+        import concurrent.futures
+
+        def process_file_keyword(file_info):
             file_path = file_info["path"]
             file_name = file_info["name"]
             
             try:
-                # Băm file thành chunks
                 chunks = parse_file(file_path)
-                
-                # Gom nội dung các chunks lại để trích xuất keyword
                 all_text = ""
                 for chunk in chunks:
                     if chunk.chunk_type == "image":
-                        # Chừa lại placeholder hoặc có thể bổ sung OCR mini ở đây sau
-                        # Hiện tại skip base64 để tránh lỗi context limit 300k tokens
                         continue
                     all_text += f"\n{chunk.content}"
                 
                 if not all_text.strip():
-                    enhanced_file_list.append(file_name)
-                    continue
+                    return {"success": False, "file_name": file_name, "error": "No text"}
                     
-                # Rút gọn nội dung nếu quá dài (tránh vượt token)
                 all_text = all_text[:8000]
-                
-                agent_logger.info(f"🔎 Đang nạp {file_name} vào KeywordExtractor...")
                 kw_result = self.keyword_extractor.extract_keywords(all_text)
-                full_thought_logs.append(f"[KeywordExtractor - {file_name}]: {kw_result.thought_log}")
-                
-                keywords_str = ", ".join(kw_result.keywords)
-                enhanced_item = f"{file_name} (Tóm tắt nội dung/Keyword: {keywords_str})"
-                enhanced_file_list.append(enhanced_item)
-                
-            except ParsingError as e:
-                agent_logger.error(f"Bỏ qua file lỗi {file_path}: {e}")
-                enhanced_file_list.append(file_name)
-            except LLMCommunicationError as e:
-                agent_logger.error(f"Lỗi rút keyword file {file_name}: {e}")
-                enhanced_file_list.append(file_name)
+                return {
+                    "success": True, 
+                    "file_name": file_name, 
+                    "thought_log": kw_result.thought_log, 
+                    "keywords": ", ".join(kw_result.keywords)
+                }
+            except Exception as e:
+                return {"success": False, "file_name": file_name, "error": str(e)}
+
+        agent_logger.info(f"🔎 Đang nạp {len(local_files)} files vào KeywordExtractor (Chế độ đa luồng)...")
+        with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
+            results = executor.map(process_file_keyword, local_files)
+            
+        for res in results:
+            if res["success"]:
+                enhanced_file_list.append(f"{res['file_name']} (Tóm tắt nội dung/Keyword: {res['keywords']})")
+                full_thought_logs.append(f"[KeywordExtractor - {res['file_name']}]: {res['thought_log']}")
+            else:
+                if "error" in res and res["error"] != "No text":
+                    agent_logger.error(f"Lỗi rút keyword file {res['file_name']}: {res['error']}")
+                enhanced_file_list.append(res['file_name'])
 
         # --- BƯỚC 3: PHÂN LOẠI THƯ MỤC ---
         agent_logger.info("🧠 Đang suy luận cách phân bổ thư mục...")

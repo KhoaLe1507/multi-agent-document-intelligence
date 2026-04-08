@@ -24,7 +24,7 @@ Tasks are classified by the **TaskRouterAgent** into two primary categories and 
 *Goal: Analyze document content, extract keywords, and classify the file into the correct target directory.*
 
 1. **Download & Parse:** Downloads files and parses them (PDF/Image/Excel) into standard `DocumentChunk` elements.
-2. **Keyword Extraction:** The `KeywordExtractorAgent` skims the text chunks and extracts a comprehensive list of keywords representing the document's core content.
+2. **Parallel Keyword Extraction:** Utilizing `ThreadPoolExecutor`, the `KeywordExtractorAgent` concurrently skims multiple document chunks simultaneously (up to 5 parallel threads), extracting a comprehensive list of keywords without blocking the main workflow.
 3. **Smart Classification:** The `FileOrganizerAgent` takes the list of files, empowered by their extracted keywords, and maps them to the appropriate folders according to the prompt's instructions.
 4. **Submit & Report:** Pushes the classification response and the full step-by-step reasoning (`thought_log`) to the server.
 
@@ -36,7 +36,7 @@ Tasks are classified by the **TaskRouterAgent** into two primary categories and 
    - `FileLocatorAgent` utilizes **Vision API Batching** to inherently "see" the first pages/chunks of all downloaded files concurrently in a single request.
    - **Iterative Loop Mechanism:** If the initial chunks lack sufficient context (e.g., just a blank cover page), the agent signals `requires_more_info = True`. The workflow automatically injects the subsequent pages into the next API query until the target files are confidently locked.
 3. **Strategic Planning:** The `PlannerAgent` breaks down the user prompt into detailed OCR extraction guidelines.
-4. **Extraction (The Sniper):** The `ExtractorAgent` systematically analyzes the locked files chunk-by-chunk to pinpoint exact data metrics based on the plan.
+4. **Parallel Extraction (The Sniper):** Driven by `ThreadPoolExecutor`, the `ExtractorAgent` systematically analyzes multiple specified chunks **in parallel**. This heavily mitigates API latency bottlenecks.
 5. **Synthesis:** The `SynthesizerAgent` aggregates all extracted metrics and formulates the concise final answer.
 6. **Submit & Report:** Synthesizer constructs a complete Thought Log of the whole procedure and sends it back alongside the response.
 

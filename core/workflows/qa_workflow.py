@@ -132,12 +132,30 @@ class QAWorkflow:
         plan = self.planner.create_extraction_plan(task.prompt_template)
         full_thought_logs.append(f"[Planner]: {plan.thought_log}")
         
+        import concurrent.futures
+        
         # --- BƯỚC 5: XẠ THỦ TRÍCH XUẤT ---
         extracted_pieces = []
-        for idx, chunk in enumerate(target_chunks):
-            agent_logger.debug(f"🕵️ Đang soi chunk {idx + 1}/{len(target_chunks)}...")
+        
+        def process_chunk_extraction(item):
+            idx, chunk = item
+            agent_logger.debug(f"🕵️ Đa luồng: Đang soi chunk {idx + 1}/{len(target_chunks)}...")
             try:
                 result = self.extractor.extract_from_chunk(chunk, plan.extraction_guidelines, plan.target_keywords)
+                return {"success": True, "idx": idx, "chunk": chunk, "result": result}
+            except Exception as e:
+                return {"success": False, "idx": idx, "chunk": chunk, "error": str(e)}
+
+        agent_logger.info(f"🎯 Kích hoạt {len(target_chunks)} Xạ thủ trích xuất (Chế độ đa luồng)...")
+        with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
+            items = list(enumerate(target_chunks))
+            results = executor.map(process_chunk_extraction, items)
+            
+        for res in results:
+            idx = res["idx"]
+            chunk = res["chunk"]
+            if res["success"]:
+                result = res["result"]
                 full_thought_logs.append(f"[Extractor - {chunk.file_name} Trang {idx+1}]: {result.thought_log}")
                 if result.found_information and result.extracted_data:
                     extracted_pieces.append({
@@ -145,8 +163,8 @@ class QAWorkflow:
                         "confidence_score": result.confidence_score,
                         "source": chunk.get_context_description()
                     })
-            except LLMCommunicationError:
-                agent_logger.error(f"Lỗi gọi LLM ở chunk {idx+1}. Bỏ qua.")
+            else:
+                agent_logger.error(f"Lỗi gọi LLM ở chunk {idx+1}: {res['error']}. Bỏ qua.")
 
         # --- BƯỚC 6: TỔNG HỢP & NỘP BÀI ---
         final_result = self.synthesizer.synthesize_final_answer(task.prompt_template, extracted_pieces)
