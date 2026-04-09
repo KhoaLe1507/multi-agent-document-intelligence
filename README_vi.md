@@ -77,16 +77,40 @@ Kiến trúc rời rạc hóa (Decoupled Platform) đưa quyền lực tối đa
 ## 🧪 Cài Đặt & Chạy Kiểm Thử Tự Động Toàn Hệ Thống
 
 Chúng tôi đã thiết lập mạng lưới Test Case nội bộ để bạn an tâm đập đi xây lại không bao giờ sụp:
+
+### 1. Khởi tạo Không gian chạy ảo
 ```bash
-# 1. Cài đặt quản lý môi trường ảo (Virtual Env) bằng `uv`
+# Ưu tiên sử dụng 'uv' để cắm thư viện siêu nhanh
 uv sync
 cp .env.example .env
-# Chắc chắn điền biến BASE_URL và OPENAI_API_KEY (hoặc token của hệ thống sinh Model) vào .env
+# Chắc chắn điền biến BASE_URL và OPENAI_API_KEY vào .env
+```
 
-# 2. Quét Kiểm thử Tự Động Toàn Diện (Tất cả luồng, Catch Errors, Cache, Image, Excel...)
+### 2. Danh sách các File Kiểm Thử (The Test Suite)
+Mọi file test nằm tại thư mục `tests/`. Chức năng cụ thể của chúng:
+- **`test_agents.py`**: Chuyên kiểm tra độ thông minh độc lập của từng AI Agent (VD: FileLocator có nhìn ra file rác không? Router có phân loại task chuẩn không?).
+- **`test_data_pipeline.py`**: Giả lập (Mock) gọi API máy chủ để xem Network có sập không, test thử các file Parser (PDF to Image, Excel to Markdown).
+- **`test_image_excel_handling.py`**: Đặc nhiệm xử lý dị thường. Chuyên ném vào file Excel siêu to hoặc PDF Full ảnh Scan để đo khả năng phân tích Vision/Table của AI.
+- **`test_workflows_offline.py`**: Trùm cuối Integration Test. Giả lập toàn bộ luồng Organize & QA Workflow nhưng không tốn Token, nhằm chứng minh `ReviewerAgent` và `CacheManager` hoạt động ăn khớp với nhau.
+- **`test_flow_qa.py` & `test_flow_organization.py`**: Các ca giả lập độc lập chuyên biệt về tư duy của hai luồng quy trình chính.
+
+### 3. Hướng dẫn chạy Test
+
+**Cách 1: Chạy toàn bộ hệ thống (Quét tất cả test cases)**
+```bash
+# Quét toàn bộ lỗi tiềm ẩn bằng 1 lệnh duy nhất
 uv run pytest tests/ -v -s
+```
 
-# 3. Kích Hoạt Động Cơ Thực Chiến
+**Cách 2: Chạy kiểm thử một Module cụ thể khi dev tính năng**
+```bash
+# Ví dụ: Chỉ muốn chạy test về đọc ảnh Excel
+uv run pytest tests/test_image_excel_handling.py -v -s
+```
+
+### 4. Kích Hoạt Động Cơ Thực Chiến
+```bash
+# Lệnh kết nối mạng với Ban tổ chức và tải file thật
 uv run python main.py
 ```
 *(Hiện tại lệnh `main.py` đang nạp đúng 1 tín hiệu nhiệm vụ `pipeline.process_single_task()`. Để thả xích cho hệ thống farm task liên hoàn, hãy đổi lệnh sang `pipeline.run_continuous()`).*

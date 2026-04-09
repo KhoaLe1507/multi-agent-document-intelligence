@@ -68,7 +68,7 @@ Because logic is decoupled from architecture, modifying the systems requires mer
 
 ## 🧪 Installation & Running Automated Tests
 
-We constructed an iron-clad integration test suite that tests local image Vision capabilities, Excel handlers, and E2E offline interactions without costing API credits:
+We constructed an iron-clad integration test suite that tests local image Vision capabilities, Excel handlers, and E2E offline interactions without costing API credits.
 
 ### 1. Environment Config
 ```bash
@@ -80,16 +80,31 @@ cp .env.example .env
 # Populate your BASE_URL and target AI Model Keys.
 ```
 
-### 2. High-Performance Test Suites
-Validate your offline Multi-Agent pipelines:
+### 2. The Built-in Test Suite
+All test configurations are located securely in `tests/`. Breakdown of test files:
+- **`test_agents.py`**: Ensures the discrete logic components of individual agents (e.g. Router, Locator) act rationally.
+- **`test_data_pipeline.py`**: A mocked networking suite that ensures File downloading and JSON submission APIs are structurally sound without hitting real servers.
+- **`test_image_excel_handling.py`**: Formats handler validation. Explicitly confirms that the Vision API can decode Image/Scans, and Tables accurately unpack Excel `.xlsx` spreadsheets. 
+- **`test_workflows_offline.py`**: Integration testing at its best. Mimics the complete E2E interaction where the `ReviewerAgent` and `CacheManager` act synchronously without risking real external API Tokens.
+- **`test_flow_qa.py` & `test_flow_organization.py`**: Specialized mock-logic checking the primary thought processes of both major workflows.
+
+### 3. Executing the Tests
+
+**Method A: Complete System Validation (Recommended)**
 ```bash
 # Safely run all offline architecture tests, Vision checks, and Table extraction
 uv run pytest tests/ -v -s
 ```
 
-### 3. Deploy The Engine
+**Method B: Isolate a Single Module**
+```bash
+# Example: Just validating if the system reads Excel files properly
+uv run pytest tests/test_image_excel_handling.py -v -s
+```
+
+### 4. Deploy The Engine
 Engage the full synchronous listener mechanism to communicate with external APIs:
 ```bash
 uv run python main.py
 ```
-*(By default, this is loaded as an independent task via `pipeline.process_single_task()`. Un-comment `pipeline.run_continuous()` if you seek endless processing capability).*
+*(By default, this is loaded as an independent task via `pipeline.process_single_task()`. Un-comment `pipeline.run_continuous()` inside `main.py` if you seek endless processing capability).*
