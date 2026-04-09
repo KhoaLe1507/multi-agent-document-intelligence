@@ -6,6 +6,7 @@ from ..config.settings import settings
 from ..utils.logger import agent_logger
 from ..utils.retry import llm_retry
 from ..exceptions.agent_errors import LLMCommunicationError
+from ..utils.trace_logger import tracer
 
 T = TypeVar('T', bound=BaseModel)
 
@@ -64,14 +65,28 @@ class BaseAgent:
                     response_format=response_model
                 )
                 agent_logger.success(f"[{self.agent_name}] Đã xuất dữ liệu chuẩn (Structured Output).")
-                return response.choices[0].message.parsed
+                parsed_res = response.choices[0].message.parsed
+                tracer.add_agent_span(
+                    agent_name=self.agent_name,
+                    system_prompt=system_prompt,
+                    user_prompt=user_prompt,
+                    response=parsed_res
+                )
+                return parsed_res
             else:
                 response = self.client.chat.completions.create(
                     model=self.model,
                     messages=messages,
                 )
                 agent_logger.success(f"[{self.agent_name}] Đã sinh xong phản hồi text.")
-                return response.choices[0].message.content
+                text_res = response.choices[0].message.content
+                tracer.add_agent_span(
+                    agent_name=self.agent_name,
+                    system_prompt=system_prompt,
+                    user_prompt=user_prompt,
+                    response=text_res
+                )
+                return text_res
                 
         except Exception as e:
             agent_logger.error(f"[{self.agent_name}] Thất bại sau nhiều lần thử: {str(e)}")
