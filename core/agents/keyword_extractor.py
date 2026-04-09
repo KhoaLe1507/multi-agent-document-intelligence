@@ -13,8 +13,11 @@ class KeywordExtractorAgent(BaseAgent):
         # Nhiệt độ thấp để trích xuất từ khóa chính xác, không tự phiếm.
         super().__init__(agent_name="KeywordExtractor", temperature=0.1)
 
-    def extract_keywords(self, chunk_content: str) -> KeywordExtractResult:
-        user_prompt = f"Hãy đọc nội dung sau và trích xuất các từ khóa (Keywords) quan trọng nhất:\n\n{chunk_content}"
+    def extract_keywords(self, content: str | list) -> KeywordExtractResult:
+        if isinstance(content, str):
+            user_prompt = f"Hãy đọc nội dung sau và trích xuất các từ khóa (Keywords) quan trọng nhất:\n\n{content}"
+        else:
+            user_prompt = [{"type": "text", "text": "Hãy đọc nội dung từ các trang tài liệu sau và trích xuất các từ khóa (Keywords) quan trọng nhất:"}] + content
         
         return self.call_llm(
             system_prompt=KEYWORD_EXTRACTOR_SYSTEM_PROMPT,

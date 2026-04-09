@@ -44,17 +44,32 @@ class OrganizeWorkflow:
             
             try:
                 chunks = parse_file(file_path)
-                all_text = ""
-                for chunk in chunks:
-                    if chunk.chunk_type == "image":
-                        continue
-                    all_text += f"\n{chunk.content}"
+                if not chunks:
+                    return {"success": False, "file_name": file_name, "error": "Tập tin rỗng"}
                 
-                if not all_text.strip():
-                    return {"success": False, "file_name": file_name, "error": "No text"}
-                    
-                all_text = all_text[:8000]
-                kw_result = self.keyword_extractor.extract_keywords(all_text)
+                content_blocks = []
+                # Chỉ lấy 3 chunk đầu tiên để tránh bị quá tải Token, 3 trang là đủ biết file là gì.
+                for idx, chunk in enumerate(chunks[:3]):
+                    if chunk.chunk_type == "image":
+                        content_blocks.append({
+                            "type": "text",
+                            "text": f"\n- Trang {idx+1} (Hình ảnh đính kèm):"
+                        })
+                        content_blocks.append({
+                            "type": "image_url",
+                            "image_url": {
+                                "url": f"data:image/jpeg;base64,{chunk.content}",
+                                "detail": "auto"
+                            }
+                        })
+                    else:
+                        text_excerpt = chunk.content[:3000]
+                        content_blocks.append({
+                            "type": "text",
+                            "text": f"\n- Trang {idx+1} (Dạng Văn bản):\n{text_excerpt}..."
+                        })
+                
+                kw_result = self.keyword_extractor.extract_keywords(content_blocks)
                 return {
                     "success": True, 
                     "file_name": file_name, 
