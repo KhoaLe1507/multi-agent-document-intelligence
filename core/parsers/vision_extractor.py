@@ -28,7 +28,7 @@ def extract_vision_chunks(file_path: str) -> list[DocumentChunk]:
     
     try:
         # 1. Nếu là file ảnh trực tiếp
-        if path.suffix.lower() in ['.png', '.jpg', '.jpeg']:
+        if path.suffix.lower() in ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.tiff', '.tif']:
             img = Image.open(file_path)
             b64_str = encode_image_to_base64(img)
             chunks.append(DocumentChunk(

@@ -18,7 +18,7 @@ def parse_file(file_path: str) -> list[DocumentChunk]:
     if ext in ['.xlsx', '.xls', '.csv']:
         return extract_tables(file_path)
         
-    elif ext in ['.png', '.jpg', '.jpeg']:
+    elif ext in ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.tiff', '.tif']:
         return extract_vision_chunks(file_path)
         
     elif ext == '.pdf':
