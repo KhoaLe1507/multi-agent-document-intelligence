@@ -3,6 +3,7 @@ import os
 from datetime import datetime
 from pathlib import Path
 from pydantic import BaseModel
+from .logger import agent_logger
 
 TRACE_DIR = Path("logs/traces")
 TRACE_DIR.mkdir(parents=True, exist_ok=True)
@@ -74,26 +75,26 @@ class TaskTracer:
         duration = (end_time - start_time).total_seconds()
         
         md_lines = []
-        md_lines.append(f"# 🎯 NHẬT KÝ TASK: `{task_id}`")
+        md_lines.append(f"# NHẬT KÝ TASK: `{task_id}`")
         md_lines.append(f"> **Thời gian thực thi:** {duration:.2f} giây")
         md_lines.append(f"> **Phân loại Task (Type):** `{self.current_task['task_type']}`")
         md_lines.append(f"> **Ngày giờ:** {start_time.strftime('%Y-%m-%d %H:%M:%S')}")
-        md_lines.append(f"\n## 📜 Đề bài gốc (Prompt Template)\n")
+        md_lines.append(f"\n##  Đề bài gốc (Prompt Template)\n")
         md_lines.append(f"```text\n{self.current_task['prompt_template']}\n```")
         
         resources = self.current_task.get("resources", [])
         if resources:
-            md_lines.append("\n## 📁 Danh sách tệp đính kèm (Resources)\n")
+            md_lines.append("\n## Danh sách tệp đính kèm (Resources)\n")
             for idx, res in enumerate(resources, 1):
                 md_lines.append(f"{idx}. `[{res.file_type}]` **{res.file_path}**")
                 
         md_lines.append(f"\n---\n")
         
-        md_lines.append(f"## 🤖 LỊCH SỬ TƯ DUY CỦA CÁC AGENTS\n")
+        md_lines.append(f"##  LỊCH SỬ TƯ DUY CỦA CÁC AGENTS\n")
         
         for i, span in enumerate(self.spans, 1):
             md_lines.append(f"### Bước {i}: [{span['agent_name']}]")
-            md_lines.append(f"*🕛 Thời gian gọi: {span['time'].strftime('%H:%M:%S')}*")
+            md_lines.append(f"* Thời gian gọi: {span['time'].strftime('%H:%M:%S')}*")
             
             md_lines.append(f"\n<details><summary><b>1. System Prompt (Quyền hạn)</b></summary>\n")
             md_lines.append(f"```text\n{span['system_prompt']}\n```\n</details>\n")
@@ -108,10 +109,10 @@ class TaskTracer:
         
         # Save to file
         file_path = TRACE_DIR / f"task_{task_id}.md"
-        with open(file_path, "w", encoding="utf-8") as f:
-            f.write("\n".join(md_lines))
+        md_content = "\n".join(md_lines)
+        file_path.write_text(md_content, encoding="utf-8")
             
-        print(f"\n✅ Đã xuất báo cáo Agent cho Task {task_id} tại file: {file_path}")
+        agent_logger.success(f"Đã xuất báo cáo Agent cho Task {task_id} tại file: {file_path}")
         
         self.current_task = None
         self.spans = []

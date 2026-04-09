@@ -6,7 +6,7 @@ from .logger import agent_logger
 def log_retry_attempt(retry_state):
     """Hàm in ra thông báo mỗi khi hệ thống phải thử lại."""
     agent_logger.warning(
-        f"⚠️ Đang thử lại lần {retry_state.attempt_number} do lỗi: {retry_state.outcome.exception()}"
+        f"Đang thử lại lần {retry_state.attempt_number} do lỗi: {retry_state.outcome.exception()}"
     )
 
 def llm_retry():

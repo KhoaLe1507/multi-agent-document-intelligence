@@ -22,7 +22,7 @@ class OrganizeWorkflow:
         self.download_dir.mkdir(exist_ok=True)
 
     def execute(self, task):
-        agent_logger.info("📁 Bắt đầu luồng File Organization...")
+        agent_logger.info("Bắt đầu luồng File Organization...")
         
         # --- BƯỚC 1: TẢI FILE ---
         local_files = []
@@ -79,7 +79,7 @@ class OrganizeWorkflow:
             except Exception as e:
                 return {"success": False, "file_name": file_name, "error": str(e)}
 
-        agent_logger.info(f"🔎 Đang nạp {len(local_files)} files vào KeywordExtractor (Chế độ đa luồng)...")
+        agent_logger.info(f"Đang nạp {len(local_files)} files vào KeywordExtractor (Chế độ đa luồng)...")
         with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
             results = executor.map(process_file_keyword, local_files)
             
@@ -93,7 +93,7 @@ class OrganizeWorkflow:
                 enhanced_file_list.append(res['file_name'])
 
         # --- BƯỚC 3: PHÂN LOẠI THƯ MỤC ---
-        agent_logger.info("🧠 Đang suy luận cách phân bổ thư mục...")
+        agent_logger.info("Đang suy luận cách phân bổ thư mục...")
         result = self.organizer.organize_files(task.prompt_template, enhanced_file_list)
         full_thought_logs.append(f"[FileOrganizer]: {result.thought_log}")
         
@@ -104,6 +104,6 @@ class OrganizeWorkflow:
             thought_log="\n".join(full_thought_logs),
             used_tools=["KeywordExtractor", "FileOrganizer"]
         )
-        agent_logger.info(f"📤 Đã nộp bài Organize! Server: {submit_response}")
+        agent_logger.info(f"Đã nộp bài Organize! Server: {submit_response}")
 
 

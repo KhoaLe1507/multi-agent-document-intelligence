@@ -31,7 +31,7 @@ def extract_tables(file_path: str) -> list[DocumentChunk]:
                     chunk_type="table", content=markdown_table, file_name=path.name, page_number=1
                 ))
                 
-        agent_logger.success(f"📊 Đã chuyển đổi {path.name} thành Markdown Table.")
+        agent_logger.success(f"Đã chuyển đổi {path.name} thành Markdown Table.")
         return chunks
         
     except Exception as e:

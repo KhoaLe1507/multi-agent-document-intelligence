@@ -97,4 +97,4 @@ class TestQAFlow:
         response = qa_agent.call_llm(system_msg, f"{user_msg}\nContent: {chunks[0].content[:100]}...")
         
         assert response is not None
-        print(f"\n✅ Luồng QA OK. AI phản hồi: {response[:100]}...")
+        print(f"\nLuồng QA OK. AI phản hồi: {response[:100]}...")

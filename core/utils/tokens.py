@@ -21,5 +21,5 @@ def truncate_text(text: str, max_tokens: int = settings.MAX_TOKENS_PER_CHUNK) ->
     if len(encoded_text) <= max_tokens:
         return text
         
-    agent_logger.warning(f"✂️ Văn bản quá dài ({len(encoded_text)} tokens). Đang cắt xuống còn {max_tokens} tokens.")
+    agent_logger.warning(f"Văn bản quá dài ({len(encoded_text)} tokens). Đang cắt xuống còn {max_tokens} tokens.")
     return encoding.decode(encoded_text[:max_tokens])

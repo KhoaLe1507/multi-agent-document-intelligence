@@ -11,7 +11,7 @@ def parse_file(file_path: str) -> list[DocumentChunk]:
     Nhận vào file tải về từ DataProvider -> Trả về danh sách DocumentChunk chuẩn.
     """
     path = Path(file_path)
-    agent_logger.info(f"🔍 Đang phân tích định dạng file: {path.name}")
+    agent_logger.info(f"Đang phân tích định dạng file: {path.name}")
     
     ext = path.suffix.lower()
     
@@ -27,5 +27,5 @@ def parse_file(file_path: str) -> list[DocumentChunk]:
         return extract_vision_chunks(file_path)
         
     else:
-        agent_logger.warning(f"⚠️ Chưa hỗ trợ định dạng {ext} cho file {path.name}. Bỏ qua.")
+        agent_logger.warning(f"Chưa hỗ trợ định dạng {ext} cho file {path.name}. Bỏ qua.")
         return []
