@@ -93,8 +93,12 @@ class TestQAFlow:
         system_msg = "Bạn là chuyên gia đọc tài liệu xây dựng."
         user_msg = f"Dựa vào ảnh sau, trả lời câu hỏi: {user_query}"
         
-        # Gửi kèm ảnh Base64 từ chunk
-        response = qa_agent.call_llm(system_msg, f"{user_msg}\nContent: {chunks[0].content[:100]}...")
+        # Gửi kèm ảnh Base64 từ chunk bằng tham số image_base64 hỗ trợ chuẩn Vision
+        response = qa_agent.call_llm(
+            system_prompt=system_msg, 
+            user_prompt=user_msg, 
+            image_base64=chunks[0].content if chunks[0].chunk_type == "image" else None
+        )
         
         assert response is not None
         print(f"\nLuồng QA OK. AI phản hồi: {response[:100]}...")

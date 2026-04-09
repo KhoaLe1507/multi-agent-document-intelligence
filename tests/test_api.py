@@ -8,12 +8,15 @@ load_dotenv()
 API_KEY = os.getenv("COMPETITION_API_KEY")
 BASE_URL = os.getenv("BASE_URL")
 
-def main():
+def check_env():
     if not API_KEY or not BASE_URL:
-        print("Lỗi: Chưa tìm thấy COMPETITION_API_KEY hoặc BASE_URL trong file .env!")
-        exit(1)
-
-    print("Bắt đầu test module dataProvider...\n")
+        print("❌ Lỗi: Chưa tìm thấy API_KEY hoặc BASE_URL trong file .env!")
+        return False
+    return True
+def main():
+    if not check_env():
+        return
+    print("🚀 Bắt đầu test module dataProvider...\n")
     
     # Khởi tạo Service
     provider = ProviderService(base_url=BASE_URL, api_key=API_KEY)
