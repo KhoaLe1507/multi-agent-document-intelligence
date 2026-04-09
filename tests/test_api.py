@@ -8,11 +8,14 @@ load_dotenv()
 API_KEY = os.getenv("API_KEY")
 BASE_URL = os.getenv("BASE_URL")
 
-if not API_KEY or not BASE_URL:
-    print("❌ Lỗi: Chưa tìm thấy API_KEY hoặc BASE_URL trong file .env!")
-    exit(1)
-
+def check_env():
+    if not API_KEY or not BASE_URL:
+        print("❌ Lỗi: Chưa tìm thấy API_KEY hoặc BASE_URL trong file .env!")
+        return False
+    return True
 def main():
+    if not check_env():
+        return
     print("🚀 Bắt đầu test module dataProvider...\n")
     
     # Khởi tạo Service

@@ -11,12 +11,15 @@ from ..schemas.data_types import DocumentChunk
 # Import Agents
 from ..agents.file_organizer import FileOrganizerAgent
 from ..agents.keyword_extractor import KeywordExtractorAgent
+from ..agents.reviewer import ReviewerAgent
+from ..utils.cache_manager import CacheManager
 
 class OrganizeWorkflow:
     def __init__(self, provider: ProviderService):
         self.provider = provider
         self.organizer = FileOrganizerAgent()
         self.keyword_extractor = KeywordExtractorAgent()
+        self.reviewer = ReviewerAgent()
         
         self.download_dir = Path("downloaded_data")
         self.download_dir.mkdir(exist_ok=True)
@@ -42,24 +45,46 @@ class OrganizeWorkflow:
             file_path = file_info["path"]
             file_name = file_info["name"]
             
+            # Check Cache
+            cached_keywords = CacheManager.get_cached_item(file_name, "keywords")
+            cached_thought = CacheManager.get_cached_item(file_name, "keyword_thought_log")
+            if cached_keywords and cached_thought:
+                return {
+                    "success": True,
+                    "file_name": file_name,
+                    "thought_log": f"[Cache HIT] Bỏ qua trích xuất, dùng lại kết quả cũ. Log: {cached_thought}",
+                    "keywords": cached_keywords
+                }
+            
             try:
                 chunks = parse_file(file_path)
+                CacheManager.update_cache(file_name, "chunks", chunks)
+                
                 all_text = ""
+                first_image_base64 = None
+                
                 for chunk in chunks:
                     if chunk.chunk_type == "image":
+                        if not first_image_base64:
+                            first_image_base64 = chunk.content
                         continue
                     all_text += f"\n{chunk.content}"
                 
-                if not all_text.strip():
-                    return {"success": False, "file_name": file_name, "error": "No text"}
+                if not all_text.strip() and not first_image_base64:
+                    return {"success": False, "file_name": file_name, "error": "No text and no images found"}
                     
                 all_text = all_text[:8000]
-                kw_result = self.keyword_extractor.extract_keywords(all_text)
+                kw_result = self.keyword_extractor.extract_keywords(all_text, image_base64=first_image_base64)
+                
+                kws_str = ", ".join(kw_result.keywords)
+                CacheManager.update_cache(file_name, "keywords", kws_str)
+                CacheManager.update_cache(file_name, "keyword_thought_log", kw_result.thought_log)
+                
                 return {
                     "success": True, 
                     "file_name": file_name, 
                     "thought_log": kw_result.thought_log, 
-                    "keywords": ", ".join(kw_result.keywords)
+                    "keywords": kws_str
                 }
             except Exception as e:
                 return {"success": False, "file_name": file_name, "error": str(e)}
@@ -77,17 +102,39 @@ class OrganizeWorkflow:
                     agent_logger.error(f"Lỗi rút keyword file {res['file_name']}: {res['error']}")
                 enhanced_file_list.append(res['file_name'])
 
-        # --- BƯỚC 3: PHÂN LOẠI THƯ MỤC ---
+        # --- BƯỚC 3: PHÂN LOẠI THƯ MỤC CÓ REVIEW ---
         agent_logger.info("🧠 Đang suy luận cách phân bổ thư mục...")
-        result = self.organizer.organize_files(task.prompt_template, enhanced_file_list)
-        full_thought_logs.append(f"[FileOrganizer]: {result.thought_log}")
+        max_attempts = 2
+        attempt = 0
+        is_acceptable = False
+        issues_history = []
         
+        while attempt < max_attempts and not is_acceptable:
+            attempt += 1
+            if issues_history:
+                feedback = "\n\n[LƯU Ý TỪ REVIEWER LẦN TRƯỚC]:\n- " + "\n- ".join(issues_history)
+                prompt_with_feedback = task.prompt_template + feedback
+            else:
+                prompt_with_feedback = task.prompt_template
+                
+            result = self.organizer.organize_files(prompt_with_feedback, enhanced_file_list)
+            
+            # Đánh giá kết quả
+            review = self.reviewer.review_organize(task.prompt_template, result.thought_log)
+            if review.is_acceptable:
+                is_acceptable = True
+                full_thought_logs.append(f"[FileOrganizer - Lần {attempt}]: {result.thought_log}\n[Reviewer Thẩm định]: OK. Chấp nhận.")
+            else:
+                issues_history.extend(review.issues)
+                full_thought_logs.append(f"[FileOrganizer - Lần {attempt}]: {result.thought_log}\n[Reviewer TỪ CHỐI]: {review.issues}")
+                agent_logger.warning(f"⚠️ Reviewer phát hiện lỗi phân loại: {review.issues}. Yêu cầu FileOrganizer sửa lỗi...")
+
         # Nộp bài
         submit_response = self.provider.submit_task(
             task_id=task.task_id,
             answers=[],  
             thought_log="\n".join(full_thought_logs),
-            used_tools=["KeywordExtractor", "FileOrganizer"]
+            used_tools=["KeywordExtractor", "FileOrganizer", "Reviewer"]
         )
         agent_logger.info(f"📤 Đã nộp bài Organize! Server: {submit_response}")
 

@@ -9,7 +9,8 @@ from ..parsers.file_router import parse_file
 from ..schemas.data_types import DocumentChunk
 
 # Import các Agent liên quan đến luồng QA
-from ..agents import FileLocatorAgent, PlannerAgent, ExtractorAgent, SynthesizerAgent
+from ..agents import FileLocatorAgent, PlannerAgent, ExtractorAgent, SynthesizerAgent, ReviewerAgent
+from ..utils.cache_manager import CacheManager
 
 class QAWorkflow:
     def __init__(self, provider: ProviderService):
@@ -18,6 +19,7 @@ class QAWorkflow:
         self.planner = PlannerAgent()
         self.extractor = ExtractorAgent()
         self.synthesizer = SynthesizerAgent()
+        self.reviewer = ReviewerAgent()
         
         self.download_dir = Path("downloaded_data")
         self.download_dir.mkdir(exist_ok=True)
@@ -36,11 +38,19 @@ class QAWorkflow:
         # --- BƯỚC 2: CHẾ BIẾN DỮ LIỆU ---
         all_chunks: List[DocumentChunk] = []
         for file_path in local_files:
-            try:
-                chunks = parse_file(file_path)
-                all_chunks.extend(chunks)
-            except ParsingError as e:
-                agent_logger.error(f"Bỏ qua file lỗi {file_path}: {e}")
+            file_name = file_path.split('/')[-1] if isinstance(file_path, str) else Path(file_path).name
+            
+            cached_chunks = CacheManager.get_cached_item(file_name, "chunks")
+            if cached_chunks:
+                agent_logger.info(f"⚡ [Cache HIT] Dùng lại dữ liệu parse của {file_name}.")
+                all_chunks.extend(cached_chunks)
+            else:
+                try:
+                    chunks = parse_file(str(file_path))
+                    CacheManager.update_cache(file_name, "chunks", chunks)
+                    all_chunks.extend(chunks)
+                except ParsingError as e:
+                    agent_logger.error(f"Bỏ qua file lỗi {file_path}: {e}")
 
         # --- BƯỚC 3: TRINH SÁT (FILE LOCATOR) ---
         target_file_names = set()
@@ -166,15 +176,38 @@ class QAWorkflow:
             else:
                 agent_logger.error(f"Lỗi gọi LLM ở chunk {idx+1}: {res['error']}. Bỏ qua.")
 
-        # --- BƯỚC 6: TỔNG HỢP & NỘP BÀI ---
-        final_result = self.synthesizer.synthesize_final_answer(task.prompt_template, extracted_pieces)
-        full_thought_logs.append(f"[Synthesizer]: {final_result.thought_log}")
+        # --- BƯỚC 6: TỔNG HỢP CÓ REVIEW ---
+        agent_logger.info("🧠 Đang tổng hợp kết quả...")
+        max_attempts = 2
+        attempt = 0
+        is_acceptable = False
+        issues_history = []
         
+        while attempt < max_attempts and not is_acceptable:
+            attempt += 1
+            if issues_history:
+                feedback = "\n\n[LƯU Ý TỪ REVIEWER LẦN TRƯỚC]:\n- " + "\n- ".join(issues_history)
+                prompt_with_feedback = task.prompt_template + feedback
+            else:
+                prompt_with_feedback = task.prompt_template
+                
+            final_result = self.synthesizer.synthesize_final_answer(prompt_with_feedback, extracted_pieces)
+            
+            # Đánh giá
+            review = self.reviewer.review_qa(task.prompt_template, final_result.final_answers, final_result.thought_log)
+            if review.is_acceptable:
+                is_acceptable = True
+                full_thought_logs.append(f"[Synthesizer - Lần {attempt}]: {final_result.thought_log}\n[Reviewer Thẩm định]: OK. Chấp nhận đáp án.")
+            else:
+                issues_history.extend(review.issues)
+                full_thought_logs.append(f"[Synthesizer - Lần {attempt}]: {final_result.thought_log}\n[Reviewer TỪ CHỐI]: {review.issues}")
+                agent_logger.warning(f"⚠️ Reviewer phát hiện lỗi QA: {review.issues}. Yêu cầu Synthesizer viết lại đáp án...")
+
         submit_response = self.provider.submit_task(
             task_id=task.task_id,
             answers=final_result.final_answers,
             thought_log="\n".join(full_thought_logs),
-            used_tools=["FileLocator", "Planner", "Extractor", "Synthesizer"]
+            used_tools=["FileLocator", "Planner", "Extractor", "Synthesizer", "Reviewer"]
         )
         agent_logger.info(f"📤 Đã nộp bài QA! Server: {submit_response}")
 

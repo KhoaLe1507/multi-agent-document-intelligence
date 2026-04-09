@@ -95,3 +95,14 @@ class FileLocatorResult(BaseModel):
         default_factory=list,
         description="Danh sách tên các file cụ thể cần hệ thống nạp thêm trang/chunk kế tiếp (nếu requires_more_info = True)."
     )
+
+class ReviewResult(BaseModel):
+    """Output của ReviewerAgent: Đánh giá chất lượng bài rèn luyện trước khi submit."""
+    is_acceptable: bool = Field(
+        ...,
+        description="True nếu đáp án và log suy luận đã đáp ứng chính xác yêu cầu đề bài. False nếu có lỗi sai lệch, thiếu thông tin, suy luận không logic."
+    )
+    issues: List[str] = Field(
+        default_factory=list,
+        description="Nếu is_acceptable = False, hãy liệt kê chi tiết các lỗi cần khắc phục (Ví dụ: 'Phân loại file A sai logic', hoặc 'Đáp án thiếu thông tin về tòa nhà')."
+    )
