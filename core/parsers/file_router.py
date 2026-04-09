@@ -3,6 +3,7 @@ from pathlib import Path
 from ..utils.logger import agent_logger
 from .table_extractor import extract_tables
 from .vision_extractor import extract_vision_chunks
+from .text_extractor import extract_text_chunks
 from ..schemas.data_types import DocumentChunk
 
 def parse_file(file_path: str) -> list[DocumentChunk]:
@@ -20,6 +21,9 @@ def parse_file(file_path: str) -> list[DocumentChunk]:
         
     elif ext in ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.tiff', '.tif']:
         return extract_vision_chunks(file_path)
+        
+    elif ext in ['.docx', '.doc', '.txt']:
+        return extract_text_chunks(file_path)
         
     elif ext == '.pdf':
         # Lưu ý: Hiện tại đang ép toàn bộ PDF thành ảnh để giải quyết Prompt tiếng Nhật của bạn.
