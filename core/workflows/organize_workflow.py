@@ -33,7 +33,9 @@ class OrganizeWorkflow:
             local_path = self.download_dir / res.file_path
             local_path.parent.mkdir(parents=True, exist_ok=True)
             saved_path = self.provider.download_file(res.token, str(local_path))
-            local_files.append({"path": saved_path, "name": res.file_path.split('/')[-1]})
+            # Nếu path trả về dạng windows backslash, fix lại.
+            pure_name = res.file_path.replace('\\', '/').split('/')[-1]
+            local_files.append({"path": saved_path, "name": pure_name})
 
         # --- BƯỚC 2: CHẾ BIẾN DỮ LIỆU & LẤY KEYWORD ---
         enhanced_file_list = []
@@ -133,6 +135,35 @@ class OrganizeWorkflow:
             if review.is_acceptable:
                 is_acceptable = True
                 full_thought_logs.append(f"[FileOrganizer - Lần {attempt}]: {result.thought_log}\n[Reviewer Thẩm định]: OK. Chấp nhận.")
+                
+                # --- BƯỚC: LƯU VÀO FOLDER VẬT LÝ ---
+                agent_logger.info("Đang thực hiện phân bổ file vật lý vào thư mục cục bộ...")
+                import shutil
+                organized_dir = self.download_dir / "organized_output" / task.task_id
+                
+                name_to_path = {f["name"]: f["path"] for f in local_files}
+                
+                try:
+                    for allocation in result.file_allocations:
+                        filename = allocation.file_name
+                        folder_desc = allocation.folder_name
+                        
+                        if filename in name_to_path:
+                            # Trích xuất mỗi tên thư mục (bỏ đoạn mô tả đi) cho gọn gàng và tránh ký tự đặc biệt của Windows
+                            clean_folder_name = folder_desc.split(":")[0].strip()
+                            # Clean string cho chắc ăn với Windows
+                            clean_folder_name = "".join(c for c in clean_folder_name if c not in r'\/:*?"<>|')
+                            
+                            target_folder = organized_dir / clean_folder_name
+                            target_folder.mkdir(parents=True, exist_ok=True)
+                            
+                            src_path = name_to_path[filename]
+                            dst_path = target_folder / filename
+                            shutil.copy2(src_path, dst_path)
+                            agent_logger.debug(f"Đã tải {filename} vào '{clean_folder_name}'")
+                    agent_logger.info(f"Đã lưu ổ cứng thành công tại {organized_dir}")
+                except Exception as e:
+                    agent_logger.error(f"Lỗi khi di chuyển file vật lý: {e}")
             else:
                 issues_history.extend(review.issues)
                 full_thought_logs.append(f"[FileOrganizer - Lần {attempt}]: {result.thought_log}\n[Reviewer TỪ CHỐI]: {review.issues}")

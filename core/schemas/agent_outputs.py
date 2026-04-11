@@ -70,11 +70,19 @@ class SynthesisResult(BaseModel):
         description="The thought log: How did the AI analyze the documents to arrive at this answer? (Used by the evaluator for transparency scoring)."
     )
 
+class FileAllocation(BaseModel):
+    file_name: str = Field(..., description="The exact file name (e.g., 'abc.pdf').")
+    folder_name: str = Field(..., description="The assigned folder name from the Taxonomy list.")
+
 class OrganizeResult(BaseModel):
     """Output of FileOrganizerAgent: The thought_log is the core deliverable for grading."""
     thought_log: str = Field(
         ..., 
         description="The full reasoning process and list of file-to-folder allocations. (e.g., 'Based on the instruction, I classified file A into folder X because...')"
+    )
+    file_allocations: list[FileAllocation] = Field(
+        ...,
+        description="List of file allocation objects, mapping each file to its target folder."
     )
 
 class FileLocatorResult(BaseModel):
