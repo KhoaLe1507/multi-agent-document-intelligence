@@ -23,6 +23,10 @@ class KeywordExtractResult(BaseModel):
         ...,
         description="A list of keywords, main ideas, or structural summaries extracted from this chunk."
     )
+    needs_more_chunks: bool = Field(
+        False,
+        description="True if the current chunks only contain cover pages, blank pages, or meaningless indexes, and you CANNOT confidently map the document into one of the 22 Valid Folders yet. False if you have seen enough core content to confidently classify it."
+    )
 
 
 class PlannerResult(BaseModel):

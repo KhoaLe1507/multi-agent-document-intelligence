@@ -64,37 +64,59 @@ class OrganizeWorkflow:
                     return {"success": False, "file_name": file_name, "error": "Tập tin rỗng"}
                 
                 content_blocks = []
-                # Chỉ lấy 3 chunk đầu tiên để tránh bị quá tải Token, 3 trang là đủ biết file là gì.
-                for idx, chunk in enumerate(chunks[:3]):
-                    if chunk.chunk_type == "image":
-                        content_blocks.append({
-                            "type": "text",
-                            "text": f"\n- Trang {idx+1} (Hình ảnh đính kèm):"
-                        })
-                        content_blocks.append({
-                            "type": "image_url",
-                            "image_url": {
-                                "url": f"data:image/jpeg;base64,{chunk.content}",
-                                "detail": "auto"
-                            }
-                        })
-                    else:
-                        text_excerpt = chunk.content[:3000]
-                        content_blocks.append({
-                            "type": "text",
-                            "text": f"\n- Trang {idx+1} (Dạng Văn bản):\n{text_excerpt}..."
-                        })
+                offset = 0
+                step = 3
+                max_iterations = 5
+                iteration = 0
                 
-                kw_result = self.keyword_extractor.extract_keywords(content_blocks)
+                last_kw_result = None
                 
-                kws_str = ", ".join(kw_result.keywords)
+                while iteration < max_iterations and offset < len(chunks):
+                    current_chunks = chunks[offset : offset + step]
+                    if not current_chunks:
+                        break
+                        
+                    for idx, chunk in enumerate(current_chunks):
+                        actual_page = offset + idx + 1
+                        if chunk.chunk_type == "image":
+                            content_blocks.append({
+                                "type": "text",
+                                "text": f"\n- Trang {actual_page} (Hình ảnh đính kèm):"
+                            })
+                            content_blocks.append({
+                                "type": "image_url",
+                                "image_url": {
+                                    "url": f"data:image/jpeg;base64,{chunk.content}",
+                                    "detail": "auto"
+                                }
+                            })
+                        else:
+                            text_excerpt = chunk.content[:3000]
+                            content_blocks.append({
+                                "type": "text",
+                                "text": f"\n- Trang {actual_page} (Dạng Văn bản):\n{text_excerpt}..."
+                            })
+                    
+                    kw_result = self.keyword_extractor.extract_keywords(content_blocks)
+                    last_kw_result = kw_result
+                    
+                    if not kw_result.needs_more_chunks:
+                        # Đã tự tin xác định được loại tài liệu, không cần lật trang thêm
+                        break 
+                        
+                    offset += step
+                    iteration += 1
+                
+                kws_str = ", ".join(last_kw_result.keywords) if last_kw_result else ""
+                thought_log = last_kw_result.thought_log if last_kw_result else "Tài liệu không có nội dung."
+                
                 CacheManager.update_cache(file_name, "keywords", kws_str)
-                CacheManager.update_cache(file_name, "keyword_thought_log", kw_result.thought_log)
+                CacheManager.update_cache(file_name, "keyword_thought_log", thought_log)
                 
                 return {
                     "success": True, 
                     "file_name": file_name, 
-                    "thought_log": kw_result.thought_log, 
+                    "thought_log": thought_log, 
                     "keywords": kws_str
                 }
             except Exception as e:
