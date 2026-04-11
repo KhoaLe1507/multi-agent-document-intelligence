@@ -25,7 +25,7 @@ class OrganizeWorkflow:
         self.download_dir.mkdir(exist_ok=True)
 
     def execute(self, task):
-        agent_logger.info("📁 Bắt đầu luồng File Organization...")
+        agent_logger.info("Bắt đầu luồng File Organization...")
         
         # --- BƯỚC 1: TẢI FILE ---
         local_files = []
@@ -58,23 +58,32 @@ class OrganizeWorkflow:
             
             try:
                 chunks = parse_file(file_path)
-                CacheManager.update_cache(file_name, "chunks", chunks)
+                if not chunks:
+                    return {"success": False, "file_name": file_name, "error": "Tập tin rỗng"}
                 
-                all_text = ""
-                first_image_base64 = None
-                
-                for chunk in chunks:
+                content_blocks = []
+                # Chỉ lấy 3 chunk đầu tiên để tránh bị quá tải Token, 3 trang là đủ biết file là gì.
+                for idx, chunk in enumerate(chunks[:3]):
                     if chunk.chunk_type == "image":
-                        if not first_image_base64:
-                            first_image_base64 = chunk.content
-                        continue
-                    all_text += f"\n{chunk.content}"
+                        content_blocks.append({
+                            "type": "text",
+                            "text": f"\n- Trang {idx+1} (Hình ảnh đính kèm):"
+                        })
+                        content_blocks.append({
+                            "type": "image_url",
+                            "image_url": {
+                                "url": f"data:image/jpeg;base64,{chunk.content}",
+                                "detail": "auto"
+                            }
+                        })
+                    else:
+                        text_excerpt = chunk.content[:3000]
+                        content_blocks.append({
+                            "type": "text",
+                            "text": f"\n- Trang {idx+1} (Dạng Văn bản):\n{text_excerpt}..."
+                        })
                 
-                if not all_text.strip() and not first_image_base64:
-                    return {"success": False, "file_name": file_name, "error": "No text and no images found"}
-                    
-                all_text = all_text[:8000]
-                kw_result = self.keyword_extractor.extract_keywords(all_text, image_base64=first_image_base64)
+                kw_result = self.keyword_extractor.extract_keywords(content_blocks)
                 
                 kws_str = ", ".join(kw_result.keywords)
                 CacheManager.update_cache(file_name, "keywords", kws_str)
@@ -89,7 +98,7 @@ class OrganizeWorkflow:
             except Exception as e:
                 return {"success": False, "file_name": file_name, "error": str(e)}
 
-        agent_logger.info(f"🔎 Đang nạp {len(local_files)} files vào KeywordExtractor (Chế độ đa luồng)...")
+        agent_logger.info(f"Đang nạp {len(local_files)} files vào KeywordExtractor (Chế độ đa luồng)...")
         with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
             results = executor.map(process_file_keyword, local_files)
             
@@ -136,6 +145,6 @@ class OrganizeWorkflow:
             thought_log="\n".join(full_thought_logs),
             used_tools=["KeywordExtractor", "FileOrganizer", "Reviewer"]
         )
-        agent_logger.info(f"📤 Đã nộp bài Organize! Server: {submit_response}")
+        agent_logger.info(f"Đã nộp bài Organize! Server: {submit_response}")
 
 

@@ -42,4 +42,4 @@ class TestOrganizationFlow:
         org_result = organizer.organize_files("Phân loại theo quy định dự án", enhanced_file_list)
         
         assert len(org_result.thought_log) > 0
-        print(f"\n✅ Luồng Organization OK. AI suy luận:\n{org_result.thought_log[:100]}...")
+        print(f"\nLuồng Organization OK. AI suy luận:\n{org_result.thought_log[:100]}...")

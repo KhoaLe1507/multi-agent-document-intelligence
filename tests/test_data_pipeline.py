@@ -4,7 +4,7 @@ from pathlib import Path
 from unittest.mock import patch, MagicMock
 
 
-# 🛑 QUAN TRỌNG: TUYỆT ĐỐI KHÔNG IMPORT THƯ MỤC `core.agents` Ở ĐÂY
+#  QUAN TRỌNG: TUYỆT ĐỐI KHÔNG IMPORT THƯ MỤC `core.agents` Ở ĐÂY
 from core.parsers.file_router import parse_file
 from core.schemas.data_types import DocumentChunk
 from dataProvider import ProviderService
@@ -30,7 +30,7 @@ class TestDataPipeline:
         
         # CHÚ Ý DÒNG NÀY: Dùng chunks[0] thay vì chunk
         assert chunks[0].chunk_type == "table", "Sai loại chunk"
-        print(f"\n✅ [Parser] Excel băm thành công {len(chunks)} chunks.")
+        print(f"\n[Parser] Excel băm thành công {len(chunks)} chunks.")
 
     def test_pdf_to_vision_chunking(self):
         """Test xem file PDF thật có được cắt thành ảnh Base64 chuẩn không."""
@@ -42,7 +42,7 @@ class TestDataPipeline:
         chunks = parse_file(str(pdf_file))
         assert len(chunks) > 0, "Parser không cắt được trang PDF nào!"
         assert chunks[0].chunk_type == "image", "Sai loại chunk"
-        print(f"\n✅ [Parser] PDF cắt thành công {len(chunks)} trang ảnh.")
+        print(f"\n[Parser] PDF cắt thành công {len(chunks)} trang ảnh.")
 
 
     # ==========================================
@@ -84,7 +84,7 @@ class TestDataPipeline:
         
         assert provider.session.session_id == "mock_session_123"
         assert task.task_id == "task_mock_999"
-        print("\n✅ [DataProvider] Mock Lấy Đề Bài thành công. Không có request thật nào được gửi đi.")
+        print("\n[DataProvider] Mock Lấy Đề Bài thành công. Không có request thật nào được gửi đi.")
 
     # 2b. Mock lệnh POST (Nộp bài) -> Chống Submit nhầm!
     @patch('requests.post')
@@ -121,4 +121,4 @@ class TestDataPipeline:
         called_url = mock_post.call_args[0][0]
         assert "mock-server.local" in called_url, "CẢNH BÁO: URL gọi API bị sai hoặc lọt URL thật!"
         
-        print(f"\n✅ [DataProvider] Mock Nộp Bài thành công. Đã chặn API thật, kết quả giả lập: {result['score']} điểm.")
+        print(f"\n[DataProvider] Mock Nộp Bài thành công. Đã chặn API thật, kết quả giả lập: {result['score']} điểm.")

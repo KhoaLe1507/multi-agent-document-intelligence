@@ -30,11 +30,11 @@ def run_test():
         diagnose=True
     )
     
-    agent_logger.info(f"🧪 BẮT ĐẦU E2E TEST: Log toàn bộ luồng hoạt động sẽ lưu tại {log_filename}")
+    agent_logger.info(f"BẮT ĐẦU E2E TEST: Log toàn bộ luồng hoạt động sẽ lưu tại {log_filename}")
     
     try:
         # Bước 1 & 2: Khởi tạo Sessions
-        agent_logger.info("👉 Giai đoạn 1: Khởi tạo DataProvider & Gọi Session Token...")
+        agent_logger.info("Giai đoạn 1: Khởi tạo DataProvider & Gọi Session Token...")
         provider = ProviderService(
             base_url=settings.BASE_URL, 
             api_key=settings.COMPETITION_API_KEY
@@ -42,17 +42,17 @@ def run_test():
         provider.create_session()
         
         # Bước 3: Lắp ráp Pipeline
-        agent_logger.info("👉 Giai đoạn 2: Lắp ráp DataProvider vào SystemPipeline...")
+        agent_logger.info("Giai đoạn 2: Lắp ráp DataProvider vào SystemPipeline...")
         pipeline = SystemPipeline(provider)
         
         # Bước 4: Chạy đúng 1 vòng lặp Task
-        agent_logger.info("👉 Giai đoạn 3: Bắt đầu xử lý 1 Task duy nhất (Fetch -> Download -> Suy Luận -> Submit)...")
+        agent_logger.info("Giai đoạn 3: Bắt đầu xử lý 1 Task duy nhất (Fetch -> Download -> Suy Luận -> Submit)...")
         pipeline.process_single_task()
         
-        agent_logger.success(f"✅ THÀNH CÔNG: Đã xử lý và submit 1 Task hoàn chỉnh. Kiểm tra chi tiết tại: {log_filename}")
+        agent_logger.success(f"THÀNH CÔNG: Đã xử lý và submit 1 Task hoàn chỉnh. Kiểm tra chi tiết tại: {log_filename}")
         
     except Exception as e:
-        agent_logger.exception(f"💥 THẤT BẠI: Vòng lặp Test E2E gặp lỗi. Trích xuất: {e}")
+        agent_logger.exception(f"THẤT BẠI: Vòng lặp Test E2E gặp lỗi. Trích xuất: {e}")
         sys.exit(1)
 
 if __name__ == "__main__":

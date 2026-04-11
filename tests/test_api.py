@@ -5,7 +5,7 @@ from dataProvider import ProviderService
 # 1. Load biến môi trường từ file .env
 load_dotenv()
 
-API_KEY = os.getenv("API_KEY")
+API_KEY = os.getenv("COMPETITION_API_KEY")
 BASE_URL = os.getenv("BASE_URL")
 
 def check_env():
@@ -22,16 +22,16 @@ def main():
     provider = ProviderService(base_url=BASE_URL, api_key=API_KEY)
     
     # Bước 1: Tạo Session
-    print("⏳ Đang tạo session mới...")
+    print(" Đang tạo session mới...")
     session = provider.create_session()
-    print("✅ Đã tạo Session thành công!")
+    print("Đã tạo Session thành công!")
     print(f"   - Session ID: {session.session_id}")
     print(f"   - Token hết hạn sau: {session.expires_in} giây\n")
     
     # Bước 2: Lấy Task
-    print("⏳ Đang lấy task tiếp theo...")
+    print(" Đang lấy task tiếp theo...")
     task = provider.get_next_task()
-    print("✅ Đã lấy Task thành công!")
+    print("Đã lấy Task thành công!")
     print(f"   - Task ID: {task.task_id}")
     print(f"   - Prompt: {task.prompt_template}")
     print(f"   - Số lượng tài liệu đính kèm: {len(task.resources)} file\n")
@@ -41,7 +41,7 @@ def main():
         print("ℹ️ Task này không có tài liệu đính kèm.")
         return
 
-    print("⏳ Đang tiến hành tải tài liệu...")
+    print(" Đang tiến hành tải tài liệu...")
     
     # Thư mục gốc để lưu data tải về
     base_download_dir = "downloaded_data"
@@ -60,11 +60,11 @@ def main():
         try:
             # Gọi hàm download
             saved_path = provider.download_file(download_token=res.token, save_path=local_file_path)
-            print(f"   ✔️ Đã lưu tại: {saved_path}")
+            print(f"   ️ Đã lưu tại: {saved_path}")
         except Exception as e:
-            print(f"   ❌ Lỗi khi tải file {res.file_path}: {e}")
+            print(f"   Lỗi khi tải file {res.file_path}: {e}")
 
-    print("\n🎉 Hoàn tất quá trình test (Chưa submit).")
+    print("\n Hoàn tất quá trình test (Chưa submit).")
 
 if __name__ == "__main__":
     main()

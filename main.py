@@ -9,7 +9,7 @@ def main():
     # 1. Load các biến môi trường
     load_dotenv()
     
-    agent_logger.info("🌟 HỆ THỐNG OCR MULTI-AGENTS ĐÃ KHỞI ĐỘNG 🌟")
+    agent_logger.info("HỆ THỐNG OCR MULTI-AGENTS ĐÃ KHỞI ĐỘNG ")
     
     try:
         # 2. Khởi tạo DataProvider (Giao tiếp Server)
@@ -24,10 +24,11 @@ def main():
         
         # 4. Kích hoạt vòng lặp thi đấu tự động
         # (Nếu đang test, bạn có thể gọi pipeline.process_single_task() thay vì run_continuous)
-        pipeline.run_continuous()
+        pipeline.process_single_task()
+        # pipeline.run_continuous()
         
     except Exception as e:
-        agent_logger.critical(f"💥 Hệ thống sập do lỗi ở cấp cao nhất: {e}")
+        agent_logger.critical(f"Hệ thống sập do lỗi ở cấp cao nhất: {e}")
 
 if __name__ == "__main__":
     main()

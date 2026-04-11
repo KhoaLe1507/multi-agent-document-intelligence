@@ -101,4 +101,4 @@ class TestQAFlow:
         )
         
         assert response is not None
-        print(f"\n✅ Luồng QA OK. AI phản hồi: {response[:150]}...")
+        print(f"\nLuồng QA OK. AI phản hồi: {response[:100]}...")

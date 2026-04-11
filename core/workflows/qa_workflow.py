@@ -25,7 +25,7 @@ class QAWorkflow:
         self.download_dir.mkdir(exist_ok=True)
 
     def execute(self, task):
-        agent_logger.info("🔬 Bắt đầu luồng Question Answering (QA)...")
+        agent_logger.info("Bắt đầu luồng Question Answering (QA)...")
         
         # --- BƯỚC 1: TẢI FILE ---
         local_files = []
@@ -67,7 +67,7 @@ class QAWorkflow:
         max_locator_loops = 5
         loop_count = 0
         
-        agent_logger.info("🔭 Trinh sát đang quét mục tiêu...")
+        agent_logger.info("Trinh sát đang quét mục tiêu...")
         full_thought_logs = []
         
         while active_files and loop_count < max_locator_loops:
@@ -131,7 +131,7 @@ class QAWorkflow:
                     
             active_files = next_active_files
             
-        agent_logger.info(f"🎯 Mục tiêu đã khóa: {list(target_file_names)}")
+        agent_logger.info(f"Mục tiêu đã khóa: {list(target_file_names)}")
         
         # Lọc chunk theo mục tiêu (Fallback nếu trinh sát xịt)
         target_chunks = [c for c in all_chunks if c.file_name in target_file_names]
@@ -149,14 +149,14 @@ class QAWorkflow:
         
         def process_chunk_extraction(item):
             idx, chunk = item
-            agent_logger.debug(f"🕵️ Đa luồng: Đang soi chunk {idx + 1}/{len(target_chunks)}...")
+            agent_logger.debug(f"Đa luồng: Đang soi chunk {idx + 1}/{len(target_chunks)}...")
             try:
                 result = self.extractor.extract_from_chunk(chunk, plan.extraction_guidelines, plan.target_keywords)
                 return {"success": True, "idx": idx, "chunk": chunk, "result": result}
             except Exception as e:
                 return {"success": False, "idx": idx, "chunk": chunk, "error": str(e)}
 
-        agent_logger.info(f"🎯 Kích hoạt {len(target_chunks)} Xạ thủ trích xuất (Chế độ đa luồng)...")
+        agent_logger.info(f"Kích hoạt {len(target_chunks)} Xạ thủ trích xuất (Chế độ đa luồng)...")
         with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
             items = list(enumerate(target_chunks))
             results = executor.map(process_chunk_extraction, items)
@@ -209,5 +209,5 @@ class QAWorkflow:
             thought_log="\n".join(full_thought_logs),
             used_tools=["FileLocator", "Planner", "Extractor", "Synthesizer", "Reviewer"]
         )
-        agent_logger.info(f"📤 Đã nộp bài QA! Server: {submit_response}")
+        agent_logger.info(f"Đã nộp bài QA! Server: {submit_response}")
 

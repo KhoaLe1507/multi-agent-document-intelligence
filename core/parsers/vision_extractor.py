@@ -28,13 +28,13 @@ def extract_vision_chunks(file_path: str) -> list[DocumentChunk]:
     
     try:
         # 1. Nếu là file ảnh trực tiếp
-        if path.suffix.lower() in ['.png', '.jpg', '.jpeg']:
+        if path.suffix.lower() in ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.tiff', '.tif']:
             img = Image.open(file_path)
             b64_str = encode_image_to_base64(img)
             chunks.append(DocumentChunk(
                 chunk_type="image", content=b64_str, file_name=path.name, page_number=1
             ))
-            agent_logger.success(f"🖼️ Đã mã hóa ảnh {path.name}.")
+            agent_logger.success(f"Đã mã hóa ảnh {path.name}.")
             
         # 2. Nếu là file PDF, cắt từng trang thành ảnh
         elif path.suffix.lower() == '.pdf':
@@ -50,7 +50,7 @@ def extract_vision_chunks(file_path: str) -> list[DocumentChunk]:
                     chunk_type="image", content=b64_str, file_name=path.name, page_number=page_num + 1
                 ))
             doc.close()
-            agent_logger.success(f"📄 Đã cắt {path.name} thành {len(chunks)} ảnh Base64.")
+            agent_logger.success(f"Đã cắt {path.name} thành {len(chunks)} ảnh Base64.")
             
         return chunks
         

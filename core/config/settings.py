@@ -29,4 +29,4 @@ try:
     # Khởi tạo instance duy nhất (Singleton pattern) để dùng chung toàn project
     settings = Settings()
 except Exception as e:
-    raise SystemConfigError(f"❌ Lỗi cấu hình môi trường: Bỏ quên biến nào trong file .env rồi? Chi tiết: {e}")
+    raise SystemConfigError(f"Lỗi cấu hình môi trường: Bỏ quên biến nào trong file .env rồi? Chi tiết: {e}")

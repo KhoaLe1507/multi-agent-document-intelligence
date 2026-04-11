@@ -1,7 +1,12 @@
 # core/utils/logger.py
 import sys
+import io
 from loguru import logger
 from pathlib import Path
+
+if sys.platform == "win32":
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
+    sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='replace')
 
 # Đảm bảo thư mục logs tồn tại
 log_dir = Path("logs")
@@ -25,7 +30,8 @@ logger.add(
     retention="3 days",   # Xóa log cũ sau 3 ngày
     compression="zip",    # Nén file log cũ
     format="{time:YYYY-MM-DD HH:mm:ss} | {level: <8} | {name}:{function}:{line} - {message}",
-    level="DEBUG"
+    level="DEBUG",
+    encoding="utf-8"
 )
 
 agent_logger = logger
