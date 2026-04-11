@@ -3,106 +3,106 @@ from pydantic import BaseModel, Field
 from typing import List, Literal, Optional
 
 class TaskRoutingResult(BaseModel):
-    """Output của TaskRouterAgent: Xác định rẽ nhánh pipeline."""
+    """Output of TaskRouterAgent: Determines the pipeline branch."""
     task_type: Literal["QA", "ORGANIZE"] = Field(
         ..., 
-        description="Nếu yêu cầu là sắp xếp/di chuyển file, chọn ORGANIZE. Nếu là trích xuất thông tin/trả lời câu hỏi, chọn QA."
+        description="If the request is to sort/move files, choose ORGANIZE. If it's to extract information/answer questions, choose QA."
     )
     reasoning: str = Field(
         ..., 
-        description="Giải thích ngắn gọn lý do tại sao lại phân loại task này vào nhóm trên."
+        description="Briefly explain the reasoning for classifying the task into the chosen category."
     )
 
 class KeywordExtractResult(BaseModel):
-    """Output của KeywordExtractorAgent: Sinh ra các Keyword đại diện cho nội dung tài liệu."""
+    """Output of KeywordExtractorAgent: Generates keywords representing the document content."""
     thought_log: str = Field(
         ...,
-        description="Giải thích ngắn gọn tại sao lại chọn các keyword này."
+        description="Brief explanation of why these keywords were selected."
     )
     keywords: List[str] = Field(
         ...,
-        description="Danh sách các từ khóa, các ý chính hoặc tóm tắt cấu trúc tài liệu lấy được từ chunk này."
+        description="A list of keywords, main ideas, or structural summaries extracted from this chunk."
     )
 
 
 class PlannerResult(BaseModel):
-    """Output của PlannerAgent: Kế hoạch tác chiến cho đàn em."""
+    """Output of PlannerAgent: The tactical extraction plan."""
     thought_log: str = Field(
         ...,
-        description="Toàn bộ tư duy phân tích: tài liệu này chứa những gì? Cần tìm ở đâu? Mục tiêu cụ thể là gì?"
+        description="Full analytical reasoning: What does this document contain? Where should we look? What are the specific target goals?"
     )
     extraction_guidelines: str = Field(
         ..., 
-        description="Hướng dẫn chi tiết, từng bước một để Extractor Agent biết cách tìm kiếm thông tin trong tài liệu."
+        description="Detailed, step-by-step instructions for the ExtractorAgent on how to find the information in the document."
     )
     target_keywords: List[str] = Field(
         ..., 
-        description="Danh sách các từ khóa hoặc mẫu (pattern) cần đặc biệt chú ý."
+        description="A list of keywords or patterns that require special attention."
     )
 
 class ExtractionResult(BaseModel):
-    """Output của ExtractorAgent (Công nhân): Kết quả cào dữ liệu từ 1 chunk."""
+    """Output of ExtractorAgent: The result of data scraping from a single chunk."""
     thought_log: str = Field(
         ...,
-        description="Quá trình soi các chi tiết trong chunk: Đã thấy gì? Tại sao lại hữu ích hay không hữu ích?"
+        description="The process of scanning details in the chunk: What was seen? Why is it useful or not useful?"
     )
     found_information: bool = Field(
         ..., 
-        description="True nếu tìm thấy thông tin hữu ích đáp ứng được yêu cầu của đề bài, False nếu chunk này không chứa thông tin liên quan."
+        description="True if useful information fulfilling the task requirement was found, False if the chunk contains no relevant information."
     )
     extracted_data: Optional[str] = Field(
         None, 
-        description="Dữ liệu trích xuất được. Giữ nguyên định dạng gốc nếu có thể. Trả về null nếu found_information là False."
+        description="The extracted data. Preserve original formatting if possible. Return null if found_information is False."
     )
     confidence_score: float = Field(
         ..., 
-        description="Độ tự tin của Agent vào thông tin trích xuất được, thang điểm từ 0.0 đến 1.0."
+        description="The agent's confidence score for the extracted information, ranging from 0.0 to 1.0."
     )
 
 class SynthesisResult(BaseModel):
-    """Output của SynthesizerAgent: Chốt hạ kết quả cuối cùng để Submit."""
+    """Output of SynthesizerAgent: Finalizes the ultimate result for submission."""
     final_answers: List[str] = Field(
         ..., 
-        description="Danh sách các câu trả lời cuối cùng, đúng định dạng yêu cầu của hệ thống (ví dụ: dạng tag)."
+        description="The list of final answers, formatted strictly according to the system's requested format (e.g., tag format)."
     )
     thought_log: str = Field(
         ..., 
-        description="Nhật ký tư duy: AI đã phân tích tài liệu như thế nào để đưa ra đáp án này? (Dùng để BTC chấm điểm minh bạch)."
+        description="The thought log: How did the AI analyze the documents to arrive at this answer? (Used by the evaluator for transparency scoring)."
     )
 
 class OrganizeResult(BaseModel):
-    """Output của FileOrganizerAgent: Trọng tâm là thought_log để BTC chấm điểm."""
+    """Output of FileOrganizerAgent: The thought_log is the core deliverable for grading."""
     thought_log: str = Field(
         ..., 
-        description="Toàn bộ quá trình suy luận và danh sách phân bổ file vào các thư mục. (Ví dụ: 'Dựa vào yêu cầu, tôi phân loại file A vào thư mục X vì...')"
+        description="The full reasoning process and list of file-to-folder allocations. (e.g., 'Based on the instruction, I classified file A into folder X because...')"
     )
 
 class FileLocatorResult(BaseModel):
-    """Output của FileLocatorAgent: Nhận diện đúng file cần xử lý hoặc yêu cầu thêm dữ liệu."""
+    """Output of FileLocatorAgent: Identifies the exact files to process or requests more data."""
     target_file_names: list[str] = Field(
         ..., 
-        description="Các file đã chắc chắn được chọn. Nếu còn phân vân, KHÔNG cho file đó vào mảng này."
+        description="The files currently confirmed for selection. If uncertain, DO NOT include the file in this array."
     )
     reasoning: str = Field(
         ..., 
-        description="Giải thích lý do tại sao lại chọn (các) file này hoặc lý do cần thêm thông tin."
+        description="Explanation of why these specific file(s) were chosen or why more information is needed."
     )
     requires_more_info: bool = Field(
         False,
-        description="Báo hiệu True nếu có bất kỳ file nào chưa thể xác định được (do trang hiện tại là trang bìa, mục lục, bảng trống, v.v) và cần nạp thêm trang/chunk tiếp theo để phân tích."
+        description="Signals True if any file cannot be determined yet (e.g., current page is a cover, index, empty table, etc.) and requires the next page/chunk to be loaded for analysis."
     )
     files_needing_more_chunks: List[str] = Field(
         default_factory=list,
-        description="Danh sách tên các file cụ thể cần hệ thống nạp thêm trang/chunk kế tiếp (nếu requires_more_info = True)."
+        description="A list of specific filenames that require the system to load their next page/chunk (used if requires_more_info = True)."
     )
 
 class ReviewResult(BaseModel):
-    """Output của ReviewerAgent: Đánh giá chất lượng bài rèn luyện trước khi submit."""
+    """Output of ReviewerAgent: Quality assurance of the agent's output before submission."""
     is_acceptable: bool = Field(
         ...,
-        description="True nếu đáp án và log suy luận đã đáp ứng chính xác yêu cầu đề bài. False nếu có lỗi sai lệch, thiếu thông tin, suy luận không logic."
+        description="True if the answer and thought log strictly satisfy the task instruction. False if there are deviations, missing information, or illogical reasoning."
     )
     issues: List[str] = Field(
         default_factory=list,
-        description="Nếu is_acceptable = False, hãy liệt kê chi tiết các lỗi cần khắc phục (Ví dụ: 'Phân loại file A sai logic', hoặc 'Đáp án thiếu thông tin về tòa nhà')."
-    )
+        description="If is_acceptable = False, detail the errors that need fixing (e.g., 'File A classified illogically' or 'Answer missing building information')."
+    )

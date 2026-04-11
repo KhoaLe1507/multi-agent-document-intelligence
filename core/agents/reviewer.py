@@ -15,10 +15,10 @@ class ReviewerAgent(BaseAgent):
         self.system_prompt = REVIEW_QA_SYSTEM
         
         user_prompt = (
-            f"🎯 **YÊU CẦU ĐỀ BÀI (Task):**\n{prompt_template}\n\n"
-            f"📝 **NHẬT KÝ TƯ DUY HIỆN TẠI (Thought Log):**\n{thought_log}\n\n"
-            f"✅ **ĐÁP ÁN DỰ KIẾN (Draft Answers):**\n{answers}\n\n"
-            "Hãy đánh giá xem bản nháp này đã thỏa mãn tuyệt đối yêu cầu đề bài chưa. Có thông tin nào bịa đặt, suy luận sai hoặc thiếu sót không?"
+            f"🎯 **TASK INSTRUCTION:**\n{prompt_template}\n\n"
+            f"📝 **CURRENT THOUGHT LOG:**\n{thought_log}\n\n"
+            f"✅ **DRAFT ANSWERS:**\n{answers}\n\n"
+            "Evaluate whether this draft perfectly satisfies the task instruction. Is there any fabricated information, faulty reasoning, or missing data?"
         )
         
         agent_logger.info("⚖️ [Reviewer] Đang thẩm định kết quả QA...")
@@ -33,9 +33,9 @@ class ReviewerAgent(BaseAgent):
         self.system_prompt = REVIEW_ORG_SYSTEM
         
         user_prompt = (
-            f"🎯 **YÊU CẦU ĐỀ BÀI (Task):**\n{prompt_template}\n\n"
-            f"📝 **NHẬT KÝ PHÂN LỘ (Thought Log):**\n{thought_log}\n\n"
-            "Hãy kiểm tra xem các file đã được phân loại vào đúng thư mục yêu cầu chưa. Lý do tổ chức file có hợp logic không?"
+            f"🎯 **TASK INSTRUCTION:**\n{prompt_template}\n\n"
+            f"📝 **CLASSIFICATION THOUGHT LOG:**\n{thought_log}\n\n"
+            "Verify that the files have been classified into the correct folders. Is the reasoning behind the file organization logical?"
         )
         
         agent_logger.info("⚖️ [Reviewer] Đang thẩm định kết quả Organize...")
