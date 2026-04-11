@@ -54,14 +54,14 @@ class OrganizeWorkflow:
                 return {
                     "success": True,
                     "file_name": file_name,
-                    "thought_log": f"[Cache HIT] Bỏ qua trích xuất, dùng lại kết quả cũ. Log: {cached_thought}",
+                    "thought_log": f"[Cache HIT] Skipping extraction, reusing cached result. Log: {cached_thought}",
                     "keywords": cached_keywords
                 }
             
             try:
                 chunks = parse_file(file_path)
                 if not chunks:
-                    return {"success": False, "file_name": file_name, "error": "Tập tin rỗng"}
+                    return {"success": False, "file_name": file_name, "error": "Empty file"}
                 
                 content_blocks = []
                 offset = 0
@@ -81,7 +81,7 @@ class OrganizeWorkflow:
                         if chunk.chunk_type == "image":
                             content_blocks.append({
                                 "type": "text",
-                                "text": f"\n- Trang {actual_page} (Hình ảnh đính kèm):"
+                                "text": f"\n- Page {actual_page} (Image attachment):"
                             })
                             content_blocks.append({
                                 "type": "image_url",
@@ -94,7 +94,7 @@ class OrganizeWorkflow:
                             text_excerpt = chunk.content[:3000]
                             content_blocks.append({
                                 "type": "text",
-                                "text": f"\n- Trang {actual_page} (Dạng Văn bản):\n{text_excerpt}..."
+                                "text": f"\n- Page {actual_page} (Text content):\n{text_excerpt}..."
                             })
                     
                     kw_result = self.keyword_extractor.extract_keywords(content_blocks)
@@ -108,7 +108,7 @@ class OrganizeWorkflow:
                     iteration += 1
                 
                 kws_str = ", ".join(last_kw_result.keywords) if last_kw_result else ""
-                thought_log = last_kw_result.thought_log if last_kw_result else "Tài liệu không có nội dung."
+                thought_log = last_kw_result.thought_log if last_kw_result else "Document has no content."
                 
                 CacheManager.update_cache(file_name, "keywords", kws_str)
                 CacheManager.update_cache(file_name, "keyword_thought_log", thought_log)
@@ -128,7 +128,7 @@ class OrganizeWorkflow:
             
         for res in results:
             if res["success"]:
-                enhanced_file_list.append(f"{res['file_name']} (Tóm tắt nội dung/Keyword: {res['keywords']})")
+                enhanced_file_list.append(f"{res['file_name']} (Content Summary / Keywords: {res['keywords']})")
                 full_thought_logs.append(f"[KeywordExtractor - {res['file_name']}]: {res['thought_log']}")
             else:
                 if "error" in res and res["error"] != "No text":
@@ -145,7 +145,7 @@ class OrganizeWorkflow:
         while attempt < max_attempts and not is_acceptable:
             attempt += 1
             if issues_history:
-                feedback = "\n\n[LƯU Ý TỪ REVIEWER LẦN TRƯỚC]:\n- " + "\n- ".join(issues_history)
+                feedback = "\n\n[REVIEWER FEEDBACK FROM PREVIOUS ROUND]:\n- " + "\n- ".join(issues_history)
                 prompt_with_feedback = task.prompt_template + feedback
             else:
                 prompt_with_feedback = task.prompt_template
@@ -156,7 +156,7 @@ class OrganizeWorkflow:
             review = self.reviewer.review_organize(task.prompt_template, result.thought_log)
             if review.is_acceptable:
                 is_acceptable = True
-                full_thought_logs.append(f"[FileOrganizer - Lần {attempt}]: {result.thought_log}\n[Reviewer Thẩm định]: OK. Chấp nhận.")
+                full_thought_logs.append(f"[FileOrganizer - Attempt {attempt}]: {result.thought_log}\n[Reviewer Audit]: OK. Accepted.")
                 
                 # --- BƯỚC: LƯU VÀO FOLDER VẬT LÝ ---
                 agent_logger.info("Đang thực hiện phân bổ file vật lý vào thư mục cục bộ...")
@@ -188,7 +188,7 @@ class OrganizeWorkflow:
                     agent_logger.error(f"Lỗi khi di chuyển file vật lý: {e}")
             else:
                 issues_history.extend(review.issues)
-                full_thought_logs.append(f"[FileOrganizer - Lần {attempt}]: {result.thought_log}\n[Reviewer TỪ CHỐI]: {review.issues}")
+                full_thought_logs.append(f"[FileOrganizer - Attempt {attempt}]: {result.thought_log}\n[Reviewer REJECTED]: {review.issues}")
                 agent_logger.warning(f"⚠️ Reviewer phát hiện lỗi phân loại: {review.issues}. Yêu cầu FileOrganizer sửa lỗi...")
 
         # Nộp bài

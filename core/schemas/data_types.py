@@ -13,9 +13,9 @@ class DocumentChunk(BaseModel):
     page_number: Optional[int] = None
     
     def get_context_description(self) -> str:
-        """Hàm tiện ích giúp Agent biết nó đang đọc cái gì."""
-        loc = f"Trang {self.page_number}" if self.page_number else "Toàn bộ file"
-        return f"[Tài liệu: {self.file_name} | Vị trí: {loc} | Định dạng: {self.chunk_type}]"
+        """Utility function to help the Agent understand what it is reading."""
+        loc = f"Page {self.page_number}" if self.page_number else "Entire file"
+        return f"[Document: {self.file_name} | Location: {loc} | Format: {self.chunk_type}]"
 
 class TaskContext(BaseModel):
     """

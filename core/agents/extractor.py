@@ -15,7 +15,7 @@ class ExtractorAgent(BaseAgent):
         
         # Nếu là ảnh, ta không đưa nội dung Base64 vào chuỗi prompt text (để tránh lỗi token)
         # Thay vào đó, ta truyền riêng cho BaseAgent xử lý Vision.
-        content_for_prompt = "[Nội dung Hình ảnh: Xem đính kèm]" if is_image else chunk.content
+        content_for_prompt = "[Image Content: See attachment]" if is_image else chunk.content
         image_to_send = chunk.content if is_image else None
 
         user_prompt = get_extractor_user_prompt(

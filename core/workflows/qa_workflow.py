@@ -75,7 +75,7 @@ class QAWorkflow:
             
             # Khởi tạo mảng content blocks hỗ trợ Vision
             user_content_blocks = [
-                {"type": "text", "text": f"<Yêu cầu của Đề bài>\n{task.prompt_template}\n\n<Danh sách Tài liệu và Nội dung hiện tại>\n"}
+                {"type": "text", "text": f"<Task Instruction>\n{task.prompt_template}\n\n<Document List and Current Content>\n"}
             ]
 
             for fname in active_files:
@@ -86,7 +86,7 @@ class QAWorkflow:
                     if chunk.chunk_type == "image":
                         user_content_blocks.append({
                             "type": "text",
-                            "text": f"\n- File: {fname} (Trang/Chunk {idx+1}) | Nội dung Hình ảnh đính kèm:"
+                            "text": f"\n- File: {fname} (Page/Chunk {idx+1}) | Image content attached:"
                         })
                         user_content_blocks.append({
                             "type": "image_url",
@@ -99,21 +99,21 @@ class QAWorkflow:
                         text_excerpt = chunk.content[:1500]
                         user_content_blocks.append({
                             "type": "text",
-                            "text": f"\n- File: {fname} (Trang/Chunk {idx+1}) | Nội dung Văn bản:\n{text_excerpt}..."
+                            "text": f"\n- File: {fname} (Page/Chunk {idx+1}) | Text content:\n{text_excerpt}..."
                         })
                 else:
                     user_content_blocks.append({
                         "type": "text",
-                        "text": f"\n- File: {fname} | [ĐÃ HẾT NỘI DUNG TÀI LIỆU]"
+                        "text": f"\n- File: {fname} | [END OF DOCUMENT CONTENT]"
                     })
                     
             user_content_blocks.append({
                 "type": "text",
-                "text": "\nPhân tích nội dung các trang tài liệu phía trên.\nHãy xác định những file nào chắc chắn cần thiết, những file nào chắc chắn loại, và những file nào cần đọc thêm trang kế tiếp."
+                "text": "\nAnalyze the document pages above.\nDetermine which files are CONFIRMED RELEVANT, which are CONFIRMED IRRELEVANT, and which NEED MORE PAGES to decide."
             })
             
             locator_result = self.locator.locate_files_advanced(user_content_blocks)
-            full_thought_logs.append(f"[FileLocator - Lần {loop_count}]: {locator_result.reasoning}")
+            full_thought_logs.append(f"[FileLocator - Round {loop_count}]: {locator_result.reasoning}")
             
             # Gộp các file target mà Agent đã chắc chắn
             for f in locator_result.target_file_names:
@@ -166,7 +166,7 @@ class QAWorkflow:
             chunk = res["chunk"]
             if res["success"]:
                 result = res["result"]
-                full_thought_logs.append(f"[Extractor - {chunk.file_name} Trang {idx+1}]: {result.thought_log}")
+                full_thought_logs.append(f"[Extractor - {chunk.file_name} Page {idx+1}]: {result.thought_log}")
                 if result.found_information and result.extracted_data:
                     extracted_pieces.append({
                         "data": result.extracted_data,
@@ -186,7 +186,7 @@ class QAWorkflow:
         while attempt < max_attempts and not is_acceptable:
             attempt += 1
             if issues_history:
-                feedback = "\n\n[LƯU Ý TỪ REVIEWER LẦN TRƯỚC]:\n- " + "\n- ".join(issues_history)
+                feedback = "\n\n[REVIEWER FEEDBACK FROM PREVIOUS ROUND]:\n- " + "\n- ".join(issues_history)
                 prompt_with_feedback = task.prompt_template + feedback
             else:
                 prompt_with_feedback = task.prompt_template
@@ -197,10 +197,10 @@ class QAWorkflow:
             review = self.reviewer.review_qa(task.prompt_template, final_result.final_answers, final_result.thought_log)
             if review.is_acceptable:
                 is_acceptable = True
-                full_thought_logs.append(f"[Synthesizer - Lần {attempt}]: {final_result.thought_log}\n[Reviewer Thẩm định]: OK. Chấp nhận đáp án.")
+                full_thought_logs.append(f"[Synthesizer - Attempt {attempt}]: {final_result.thought_log}\n[Reviewer Audit]: OK. Answer accepted.")
             else:
                 issues_history.extend(review.issues)
-                full_thought_logs.append(f"[Synthesizer - Lần {attempt}]: {final_result.thought_log}\n[Reviewer TỪ CHỐI]: {review.issues}")
+                full_thought_logs.append(f"[Synthesizer - Attempt {attempt}]: {final_result.thought_log}\n[Reviewer REJECTED]: {review.issues}")
                 agent_logger.warning(f"⚠️ Reviewer phát hiện lỗi QA: {review.issues}. Yêu cầu Synthesizer viết lại đáp án...")
 
         submit_response = self.provider.submit_task(
