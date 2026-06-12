@@ -18,13 +18,12 @@ class Settings(BaseSettings):
         description="Skip tasks whose resource files are not present locally",
     )
 
-    # --- 2. OpenAI ---
-    OPENAI_API_KEY: str = Field(..., description="OpenAI API key")
-    GPT_MODEL_NAME: str = Field(
-        default="gpt-4o-2024-08-06",
-        description="Model used by agents",
+    # --- 2. Gemini ---
+    GEMINI_API_KEY: str = Field(default="", description="Google Gemini API key")
+    GEMINI_MODEL_NAME: str = Field(
+        default="gemini-2.5-flash",
+        description="Gemini model used by agents",
     )
-    OPENAI_BASE_URL: str = "https://api.openai.com/v1"
 
     # --- 3. Agent temperatures ---
     TEMP_ROUTER: float = Field(default=0.0, description="Router temperature")

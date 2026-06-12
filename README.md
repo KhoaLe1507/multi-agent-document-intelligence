@@ -1,6 +1,6 @@
 # 🌟 OCR Multi-Agents System
 
-This project is a fully automated **Multi-Agent system** designed for complex document handling, data extraction, question answering (QA), and automated file organization. It leverages the latest AI architectures (such as OpenAI's Vision capabilities and Gemini) combined with structured data flows (Pydantic) to process PDFs, scan images, and spreadsheets effectively.
+This project is a fully automated **Multi-Agent system** designed for complex document handling, data extraction, question answering (QA), and automated file organization. It uses Google Gemini vision and structured outputs combined with Pydantic schemas to process PDFs, scan images, and spreadsheets effectively.
 
 ---
 
@@ -77,7 +77,7 @@ uv sync
 
 # Duplicate the .env
 cp .env.example .env
-# Populate your local dataset paths and OpenAI model key.
+# Populate your local dataset paths and Gemini API key.
 ```
 
 ### 2. The Built-in Test Suite

@@ -1,6 +1,6 @@
 # 🌟 OCR Multi-Agents System
 
-Dự án này là hệ thống **Multi-Agent tự động hoàn toàn**, chuyên xử lý các tác vụ bóc tách tài liệu phức tạp, hỏi đáp (QA) và tự động phân loại thư mục (Organization). Hệ thống tận dụng những công nghệ tư duy AI hàng đầu (khả năng Vision của OpenAI/Gemini) kết hợp với kiến trúc dữ liệu đầu ra có cấu trúc (Pydantic), giúp nó hoạt động trơn tru trên mọi loại file: PDF, Hình ảnh Scan, và cả Table Excel.
+Dự án này là hệ thống **Multi-Agent tự động hoàn toàn**, chuyên xử lý các tác vụ bóc tách tài liệu phức tạp, hỏi đáp (QA) và tự động phân loại thư mục (Organization). Hệ thống sử dụng Google Gemini Vision và structured output kết hợp với schema Pydantic, giúp nó hoạt động trơn tru trên mọi loại file: PDF, Hình ảnh Scan, và cả Table Excel.
 
 ---
 
@@ -70,7 +70,7 @@ Mọi đặc vụ đều "kế thừa" khả năng bẩm sinh từ `BaseAgent`. 
 Kiến trúc rời rạc hóa (Decoupled Platform) đưa quyền lực tối đa vào tay lập trình viên:
 - **Muốn chỉnh sửa "bản tính" Agent (LLM Hacking)**: Update chữ viết trong `core/prompts/`. Mọi Agent đều bị điều khiển linh hồn bởi dòng chữ này.
 - **Muốn AI buộc phải trả lời thêm một biến (ví dụ: `ma_hop_dong`)**: Đừng sửa hàm phức tạp! Mở class Pydantic trong `core/schemas/agent_outputs.py` và thêm field `ma_hop_dong: str = Field(description="Mã HĐ gồm 8 chữ số")`.
-- **Đổi vỏ bọc Model**: Sửa thông số `.env` để qua mặt OpenAI hoặc dùng lõi Gemini xịn nhất (Ví dụ: `gemini-1.5-pro`).
+- **Đổi model**: Sửa `GEMINI_MODEL_NAME` trong `.env` để chọn model Gemini phù hợp.
 
 ---
 
@@ -83,7 +83,7 @@ Chúng tôi đã thiết lập mạng lưới Test Case nội bộ để bạn a
 # Ưu tiên sử dụng 'uv' để cắm thư viện siêu nhanh
 uv sync
 cp .env.example .env
-# Chắc chắn điền DATA_DIR, DATA_DUMP_PATH và OPENAI_API_KEY vào .env
+# Chắc chắn điền DATA_DIR, DATA_DUMP_PATH và GEMINI_API_KEY vào .env
 ```
 
 ### 2. Danh sách các File Kiểm Thử (The Test Suite)

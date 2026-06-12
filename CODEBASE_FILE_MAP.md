@@ -47,8 +47,8 @@ Tài liệu này mô tả công dụng của từng file code chính trong dự 
 
 ### `core/agents/base_agent.py`
 
-- Lớp nền cho mọi agent dùng OpenAI.
-- Tạo `OpenAI` client từ cấu hình hệ thống.
+- Lớp nền cho mọi agent dùng Google Gemini.
+- Tạo `google-genai` client từ cấu hình hệ thống.
 - Cung cấp `call_llm()` để gọi model theo 2 chế độ:
   - text thường
   - structured output theo `Pydantic` model
@@ -267,7 +267,7 @@ Tài liệu này mô tả công dụng của từng file code chính trong dự 
 ### `core/config/settings.py`
 
 - Quản lý cấu hình môi trường bằng `pydantic-settings`.
-- Đọc local dataset path, OpenAI API key, model name, nhiệt độ từng agent, giới hạn token, retry.
+- Đọc local dataset path, Gemini API key, model name, nhiệt độ từng agent, giới hạn token, retry.
 - Khởi tạo singleton `settings`.
 - Nếu thiếu biến môi trường, ném `SystemConfigError` ngay lúc import.
 
@@ -315,7 +315,7 @@ Tài liệu này mô tả công dụng của từng file code chính trong dự 
 ### `core/utils/tokens.py`
 
 - Hàm tiện ích đếm token và cắt ngắn text theo model.
-- `count_tokens()` dùng `tiktoken`.
+- `count_tokens()` dùng heuristic local cho Gemini chunking.
 - `truncate_text()` cắt text nếu vượt `MAX_TOKENS_PER_CHUNK`.
 - Hiện tại không thấy được gọi nhiều trong workflow chính.
 
@@ -362,7 +362,7 @@ Tài liệu này mô tả công dụng của từng file code chính trong dự 
   - router phân nhánh đúng
   - locator tìm đúng file
   - organizer bám taxonomy đúng
-- Cần môi trường có API key OpenAI vì gọi agent thật.
+- Cần môi trường có Gemini API key vì gọi agent thật.
 
 ### `tests/test_api.py`
 
@@ -446,4 +446,4 @@ Tài liệu này mô tả công dụng của từng file code chính trong dự 
 
 - Nhiều test trong `tests/` là integration test gọi LLM thật, không phải unit test thuần. Khi chạy cần phân biệt:
   - test offline/mock
-  - test online cần OpenAI cho các agent LLM
+  - test online cần Gemini cho các agent LLM
