@@ -29,7 +29,7 @@ Dự án này là hệ thống **Multi-Agent tự động hoàn toàn**, chuyên
 - **Bước 4: Trọng tài Thẩm định (Self-Correction Loop):** 
   - `ReviewerAgent` đứng ngoài rà soát chéo Output của Agent tổ chức. Nếu nó phát hiện 1 file bị xếp nhầm thư mục (VD: hóa đơn xếp vào thư mục thiết kế), nó sẽ từ chối (`is_acceptable = False`) và cung cấp chuỗi lý do vi phạm (`issues`).
   - Vòng lặp `while` lúc này đẩy chuỗi lỗi lên `FileOrganizerAgent` dưới dạng `[LƯU Ý TỪ REVIEWER LẦN TRƯỚC]:...`. Agent Tổ Chức lúc này giác ngộ và sửa đáp án. Quá trình bọc lót này giới hạn tối đa 2 lần.
-- **Bước 5: Báo Cáo:** Chốt danh sách cuối cùng và ném kèm toàn bộ Dòng Suy Nghĩ (Thought Log) về Server.
+- **Bước 5: Báo Cáo:** Chốt danh sách cuối cùng và ghi kèm toàn bộ Dòng Suy Nghĩ (Thought Log) vào file submission local.
 
 ### 2. Luồng Hỏi Đáp Tiên Tiến (QA Extraction Workflow)
 *Mục tiêu: Lục soát đống hồ sơ khổng lồ để tìm kiếm các con số hoặc đáp án cực kỳ chi tiết theo yêu cầu (VD: Tìm Tên Công Trình, Chi phí thi công...).*
@@ -83,13 +83,13 @@ Chúng tôi đã thiết lập mạng lưới Test Case nội bộ để bạn a
 # Ưu tiên sử dụng 'uv' để cắm thư viện siêu nhanh
 uv sync
 cp .env.example .env
-# Chắc chắn điền biến BASE_URL và OPENAI_API_KEY vào .env
+# Chắc chắn điền DATA_DIR, DATA_DUMP_PATH và OPENAI_API_KEY vào .env
 ```
 
 ### 2. Danh sách các File Kiểm Thử (The Test Suite)
 Mọi file test nằm tại thư mục `tests/`. Chức năng cụ thể của chúng:
 - **`test_agents.py`**: Chuyên kiểm tra độ thông minh độc lập của từng AI Agent (VD: FileLocator có nhìn ra file rác không? Router có phân loại task chuẩn không?).
-- **`test_data_pipeline.py`**: Giả lập (Mock) gọi API máy chủ để xem Network có sập không, test thử các file Parser (PDF to Image, Excel to Markdown).
+- **`test_data_pipeline.py`**: Kiểm tra parser, mapping tên resource local, copy file từ `data`, và ghi submission JSONL.
 - **`test_image_excel_handling.py`**: Đặc nhiệm xử lý dị thường. Chuyên ném vào file Excel siêu to hoặc PDF Full ảnh Scan để đo khả năng phân tích Vision/Table của AI.
 - **`test_workflows_offline.py`**: Trùm cuối Integration Test. Giả lập toàn bộ luồng Organize & QA Workflow nhưng không tốn Token, nhằm chứng minh `ReviewerAgent` và `CacheManager` hoạt động ăn khớp với nhau.
 - **`test_flow_qa.py` & `test_flow_organization.py`**: Các ca giả lập độc lập chuyên biệt về tư duy của hai luồng quy trình chính.

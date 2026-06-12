@@ -6,7 +6,8 @@ from typing import List
 class Resource:
     file_path: str
     file_type: str
-    token: str
+    token: str = ""
+    local_path: str | None = None
 
 @dataclass
 class Task:

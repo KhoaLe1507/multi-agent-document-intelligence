@@ -41,13 +41,13 @@ class BaseAgent:
             user_content.append({"type": "text", "text": user_prompt})
             
             if image_base64:
-                user_content.append({
-                    "type": "image_url",
-                    "image_url": {
-                        "url": f"data:image/jpeg;base64,{image_base64}",
-                        "detail": "high" # Đảm bảo độ phân giải tốt nhất cho OCR
-                    }
-                })
+                    user_content.append({
+                        "type": "image_url",
+                        "image_url": {
+                            "url": f"data:image/jpeg;base64,{image_base64}",
+                            "detail": "high" # Đảm bảo độ phân giải tốt nhất cho OCR
+                        }
+                    })
         else:
             user_content = user_prompt
         

@@ -10,7 +10,7 @@ Tài liệu này mô tả công dụng của từng file code chính trong dự 
 ## Tổng quan kiến trúc
 
 - `main.py` là điểm khởi động chương trình.
-- `dataProvider/` phụ trách giao tiếp với API cuộc thi: tạo session, lấy task, tải file, nộp kết quả.
+- `dataProvider/` phụ trách nạp task/resource từ dataset local và ghi submission local.
 - `core/pipeline.py` định tuyến task vào một trong hai workflow chính:
   - `QAWorkflow`: đọc tài liệu để trả lời câu hỏi.
   - `OrganizeWorkflow`: phân loại tài liệu vào taxonomy thư mục.
@@ -26,7 +26,7 @@ Tài liệu này mô tả công dụng của từng file code chính trong dự 
 
 - Entry point của ứng dụng.
 - Load biến môi trường bằng `dotenv`.
-- Khởi tạo `ProviderService`, tạo session với server.
+- Khởi tạo `ProviderService` ở chế độ local.
 - Khởi tạo `SystemPipeline` rồi chạy `process_single_task()` cho một task.
 - Có comment sẵn để chuyển sang `run_continuous()` nếu muốn chạy vòng lặp liên tục.
 
@@ -121,27 +121,27 @@ Tài liệu này mô tả công dụng của từng file code chính trong dự 
 
 - Workflow hoàn chỉnh cho bài toán hỏi đáp.
 - Các bước chính:
-  - tải file từ server
+  - lấy file từ dataset local qua `ProviderService`
   - parse file thành chunk và tận dụng cache
   - dùng `FileLocatorAgent` để xác định file liên quan
   - dùng `PlannerAgent` để lập kế hoạch
   - chạy `ExtractorAgent` song song trên các chunk mục tiêu
   - dùng `SynthesizerAgent` tạo đáp án
   - dùng `ReviewerAgent` review và yêu cầu viết lại tối đa 2 vòng
-  - submit kết quả qua `ProviderService`
+  - ghi kết quả qua `ProviderService`
 - Có lưu `thought_log` đầy đủ cho toàn bộ pipeline.
 
 ### `core/workflows/organize_workflow.py`
 
 - Workflow hoàn chỉnh cho bài toán tổ chức file.
 - Các bước chính:
-  - tải file từ server
+  - lấy file từ dataset local qua `ProviderService`
   - parse từng file
   - dùng `KeywordExtractorAgent` để lấy keyword, có cache chéo task
   - dùng `FileOrganizerAgent` để phân loại
   - dùng `ReviewerAgent` để kiểm định tối đa 2 vòng
   - sao chép file vật lý vào `downloaded_data/organized_output/<task_id>/`
-  - submit thought log lên server
+  - ghi thought log vào JSONL local
 - Có xử lý song song khi rút keyword cho nhiều file.
 
 ### `core/parsers/__init__.py`
@@ -267,7 +267,7 @@ Tài liệu này mô tả công dụng của từng file code chính trong dự 
 ### `core/config/settings.py`
 
 - Quản lý cấu hình môi trường bằng `pydantic-settings`.
-- Đọc API key, base URL, model name, nhiệt độ từng agent, giới hạn token, retry.
+- Đọc local dataset path, OpenAI API key, model name, nhiệt độ từng agent, giới hạn token, retry.
 - Khởi tạo singleton `settings`.
 - Nếu thiếu biến môi trường, ném `SystemConfigError` ngay lúc import.
 
@@ -345,22 +345,13 @@ Tài liệu này mô tả công dụng của từng file code chính trong dự 
 - Dataclass `Resource`: thông tin file đính kèm của task.
 - Dataclass `Task`: `task_id`, `prompt_template`, danh sách `resources`.
 
-### `dataProvider/utils/http_client.py`
-
-- HTTP client mỏng bọc quanh `requests`.
-- Hỗ trợ:
-  - thêm `x-api-key`
-  - set bearer token
-  - `post()`
-  - `get()` với tùy chọn stream
-
 ### `dataProvider/services/provider_service.py`
 
-- Lớp service làm việc trực tiếp với API cuộc thi.
-- `create_session()` tạo session và cập nhật bearer token.
-- `get_next_task()` lấy task mới và map JSON sang dataclass `Task`.
-- `download_file()` tải file theo stream và ghi ra disk.
-- `submit_task()` gửi kết quả làm bài lên server.
+- Lớp service làm việc trực tiếp với `data/dump.json` và folder `data`.
+- `create_session()` tạo session local tương thích với interface cũ.
+- `get_next_task()` lấy task tiếp theo từ dump và map JSON sang dataclass `Task`.
+- `download_file()` copy resource local sang path workflow yêu cầu.
+- `submit_task()` ghi kết quả làm bài vào JSONL local.
 
 ## `tests/`
 
@@ -375,17 +366,18 @@ Tài liệu này mô tả công dụng của từng file code chính trong dự 
 
 ### `tests/test_api.py`
 
-- Script test tương tác `dataProvider` với API thật.
-- Kiểm tra biến môi trường, tạo session, lấy task, tải file.
+- Script test tương tác `dataProvider` với dataset local.
+- Kiểm tra biến môi trường, tạo session local, lấy task, resolve resource.
 - Không dùng pytest chuẩn; thiên về chạy tay để xác minh kết nối hệ thống.
 
 ### `tests/test_data_pipeline.py`
 
-- Kiểm tra parser và data provider theo hướng offline/mocked.
+- Kiểm tra parser và data provider theo hướng offline/local.
 - Test parse file Excel và PDF mẫu thành chunk đúng loại.
-- Mock `requests` để test:
-  - lấy task
-  - submit bài
+- Test local provider:
+  - lấy task từ dump
+  - copy resource từ folder data
+  - ghi submission local
 - Không cần chạm API thật.
 
 ### `tests/test_flow_organization.py`
@@ -428,10 +420,10 @@ Tài liệu này mô tả công dụng của từng file code chính trong dự 
 
 ### `tests/test_pipeline.py`
 
-- Script test end-to-end cho toàn pipeline với server thật.
+- Script test end-to-end cho toàn pipeline với dataset local.
 - Tạo file log riêng theo timestamp.
 - Khởi tạo provider, tạo session, dựng pipeline, xử lý một task đầy đủ.
-- Phù hợp để chạy xác minh toàn hệ thống trước khi submit thật.
+- Phù hợp để chạy xác minh toàn hệ thống với dữ liệu local.
 
 ### `tests/test_workflows_offline.py`
 
@@ -454,5 +446,4 @@ Tài liệu này mô tả công dụng của từng file code chính trong dự 
 
 - Nhiều test trong `tests/` là integration test gọi LLM thật, không phải unit test thuần. Khi chạy cần phân biệt:
   - test offline/mock
-  - test online cần OpenAI/API cuộc thi
-
+  - test online cần OpenAI cho các agent LLM

@@ -1,32 +1,44 @@
 # core/config/settings.py
-from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic import Field
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
 from ..exceptions.agent_errors import SystemConfigError
 
+
 class Settings(BaseSettings):
-    # --- 1. Cấu hình Server Cuộc Thi ---
-    COMPETITION_API_KEY: str = Field(..., description="API Key của hệ thống thi")
-    BASE_URL: str = Field(..., description="URL của DataProvider API")
-    
-    # --- 2. Cấu hình OpenAI ---
-    OPENAI_API_KEY: str = Field(..., description="API Key của OpenAI")
-    GPT_MODEL_NAME: str = Field(default="gpt-4o-2024-08-06", description="Phiên bản model 4o chuẩn nhất hiện tại")
+    # --- 1. Local dataset ---
+    DATA_DIR: str = Field(default="data", description="Folder containing local resource files")
+    DATA_DUMP_PATH: str = Field(default="data/dump.json", description="Local task dump JSON")
+    LOCAL_SUBMISSIONS_PATH: str = Field(
+        default="logs/local_submissions.jsonl",
+        description="Where local workflow submissions are written",
+    )
+    LOCAL_SKIP_MISSING_TASKS: bool = Field(
+        default=True,
+        description="Skip tasks whose resource files are not present locally",
+    )
+
+    # --- 2. OpenAI ---
+    OPENAI_API_KEY: str = Field(..., description="OpenAI API key")
+    GPT_MODEL_NAME: str = Field(
+        default="gpt-4o-2024-08-06",
+        description="Model used by agents",
+    )
     OPENAI_BASE_URL: str = "https://api.openai.com/v1"
-    
-    # --- 3. Cấu hình "Nhiệt độ" (Temperature) cho từng Agent ---
-    TEMP_ROUTER: float = Field(default=0.0, description="Router cần tính logic tuyệt đối")
-    TEMP_EXTRACTOR: float = Field(default=0.1, description="Extractor cần bám sát văn bản, ít ảo giác")
-    TEMP_SYNTHESIZER: float = Field(default=0.3, description="Synthesizer cần chút linh hoạt để viết văn mượt mà")
 
-    # --- 4. Cấu hình Hệ thống ---
-    MAX_RETRIES: int = Field(default=3, description="Số lần thử lại tối đa khi API sập")
-    MAX_TOKENS_PER_CHUNK: int = Field(default=4000, description="Giới hạn token cho mỗi mảnh dữ liệu")
+    # --- 3. Agent temperatures ---
+    TEMP_ROUTER: float = Field(default=0.0, description="Router temperature")
+    TEMP_EXTRACTOR: float = Field(default=0.1, description="Extractor temperature")
+    TEMP_SYNTHESIZER: float = Field(default=0.3, description="Synthesizer temperature")
 
-    # Load từ file .env
+    # --- 4. System ---
+    MAX_RETRIES: int = Field(default=3, description="Maximum API retries")
+    MAX_TOKENS_PER_CHUNK: int = Field(default=4000, description="Chunk token limit")
+
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
+
 try:
-    # Khởi tạo instance duy nhất (Singleton pattern) để dùng chung toàn project
     settings = Settings()
 except Exception as e:
-    raise SystemConfigError(f"Lỗi cấu hình môi trường: Bỏ quên biến nào trong file .env rồi? Chi tiết: {e}")
+    raise SystemConfigError(f"Environment configuration error: {e}")

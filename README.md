@@ -24,7 +24,7 @@ The system operates continuously as an autonomous AI engine rather than a static
 - **Step 2: 360-Degree Keyword Scouting (Text & Vision):** The `ThreadPoolExecutor` dispatches multiple `KeywordExtractorAgent` instances simultaneously. Crucially, these instances can inject `image_base64` feeds dynamically; this allows pure-scan image files to still yield high-quality keywords in a matter of seconds. Keywords are instantly globally cached.
 - **Step 3: Smart Algorithmic Mapping:** The `FileOrganizerAgent` takes the entire summarized bundle (File Names + Keywords) alongside the strict user rulebook, structuring its neural choices down into a concrete JSON mapping schema.
 - **Step 4: The Sentinel Loop (Self-Correction):** The strict `ReviewerAgent` sweeps the outputs. If the rationale behind placing "design_blueprint.pdf" inside the "Invoices" folder lacks logic, it throws an error list (`issues`). The workflow traps this failure in a `while` loop, forcefully feeding `[LƯU Ý TỪ REVIEWER LẦN TRƯỚC]` back to the `FileOrganizerAgent` up to 2 times to correct the mistake.
-- **Step 5: Final Transmission:** Successfully formulated mapping decisions and Thought Logs are beamed back to the Data Provider Server.
+- **Step 5: Final Persistence:** Successfully formulated mapping decisions and Thought Logs are written to the local submissions JSONL file.
 
 ### 2. Question Answering (QA) Workflow
 *Goal: Autonomously scout through dozens of files, zero in on targeted data, and synthesize a cohesive contextual answer.*
@@ -77,13 +77,13 @@ uv sync
 
 # Duplicate the .env
 cp .env.example .env
-# Populate your BASE_URL and target AI Model Keys.
+# Populate your local dataset paths and OpenAI model key.
 ```
 
 ### 2. The Built-in Test Suite
 All test configurations are located securely in `tests/`. Breakdown of test files:
 - **`test_agents.py`**: Ensures the discrete logic components of individual agents (e.g. Router, Locator) act rationally.
-- **`test_data_pipeline.py`**: A mocked networking suite that ensures File downloading and JSON submission APIs are structurally sound without hitting real servers.
+- **`test_data_pipeline.py`**: A local dataset suite that checks parsing, resource filename mapping, local copying, and JSONL submission persistence.
 - **`test_image_excel_handling.py`**: Formats handler validation. Explicitly confirms that the Vision API can decode Image/Scans, and Tables accurately unpack Excel `.xlsx` spreadsheets. 
 - **`test_workflows_offline.py`**: Integration testing at its best. Mimics the complete E2E interaction where the `ReviewerAgent` and `CacheManager` act synchronously without risking real external API Tokens.
 - **`test_flow_qa.py` & `test_flow_organization.py`**: Specialized mock-logic checking the primary thought processes of both major workflows.
@@ -103,7 +103,7 @@ uv run pytest tests/test_image_excel_handling.py -v -s
 ```
 
 ### 4. Deploy The Engine
-Engage the full synchronous listener mechanism to communicate with external APIs:
+Run the workflow against the local dump and local resource files:
 ```bash
 uv run python main.py
 ```

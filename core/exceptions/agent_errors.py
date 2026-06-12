@@ -9,7 +9,7 @@ class SystemConfigError(BaseSystemError):
     pass
 
 class DataProviderError(BaseSystemError):
-    """Lỗi khi giao tiếp với Server cuộc thi (Download xịt, Submit lỗi)."""
+    """Lỗi khi giao tiếp với nguồn dữ liệu hoặc nơi lưu submission."""
     pass
 
 class LLMCommunicationError(BaseSystemError):

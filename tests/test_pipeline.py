@@ -36,8 +36,10 @@ def run_test():
         # Bước 1 & 2: Khởi tạo Sessions
         agent_logger.info("Giai đoạn 1: Khởi tạo DataProvider & Gọi Session Token...")
         provider = ProviderService(
-            base_url=settings.BASE_URL, 
-            api_key=settings.COMPETITION_API_KEY
+            dump_path=settings.DATA_DUMP_PATH,
+            data_dir=settings.DATA_DIR,
+            submissions_path=settings.LOCAL_SUBMISSIONS_PATH,
+            skip_missing_tasks=settings.LOCAL_SKIP_MISSING_TASKS,
         )
         provider.create_session()
         

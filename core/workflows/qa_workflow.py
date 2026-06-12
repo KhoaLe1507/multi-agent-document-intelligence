@@ -209,5 +209,5 @@ class QAWorkflow:
             thought_log="\n".join(full_thought_logs),
             used_tools=["FileLocator", "Planner", "Extractor", "Synthesizer", "Reviewer"]
         )
-        agent_logger.info(f"Đã nộp bài QA! Server: {submit_response}")
+        agent_logger.info(f"Đã lưu kết quả QA: {submit_response}")
 

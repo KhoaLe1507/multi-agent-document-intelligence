@@ -198,6 +198,6 @@ class OrganizeWorkflow:
             thought_log="\n".join(full_thought_logs),
             used_tools=["KeywordExtractor", "FileOrganizer", "Reviewer"]
         )
-        agent_logger.info(f"Đã nộp bài Organize! Server: {submit_response}")
+        agent_logger.info(f"Đã lưu kết quả Organize: {submit_response}")
 
 
