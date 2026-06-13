@@ -12,7 +12,21 @@ from ..schemas.data_types import DocumentChunk
 from ..agents import FileLocatorAgent, PlannerAgent, ExtractorAgent, SynthesizerAgent, ReviewerAgent
 from ..utils.cache_manager import CacheManager
 
+from ..graphs.qa_graph import QAWorkflowGraph as _QAWorkflowGraph
+
+
 class QAWorkflow:
+    """Compatibility wrapper around the LangGraph QA workflow."""
+
+    def __init__(self, provider: ProviderService):
+        self.graph = _QAWorkflowGraph(provider)
+
+    def execute(self, task):
+        agent_logger.info("Starting Question Answering (QA) LangGraph workflow...")
+        return self.graph.execute(task)
+
+
+class LegacyQAWorkflow:
     def __init__(self, provider: ProviderService):
         self.provider = provider
         self.locator = FileLocatorAgent()

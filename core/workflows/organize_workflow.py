@@ -14,7 +14,21 @@ from ..agents.keyword_extractor import KeywordExtractorAgent
 from ..agents.reviewer import ReviewerAgent
 from ..utils.cache_manager import CacheManager
 
+from ..graphs.organize_graph import OrganizeWorkflowGraph as _OrganizeWorkflowGraph
+
+
 class OrganizeWorkflow:
+    """Compatibility wrapper around the LangGraph organization workflow."""
+
+    def __init__(self, provider: ProviderService):
+        self.graph = _OrganizeWorkflowGraph(provider)
+
+    def execute(self, task):
+        agent_logger.info("Starting File Organization LangGraph workflow...")
+        return self.graph.execute(task)
+
+
+class LegacyOrganizeWorkflow:
     def __init__(self, provider: ProviderService):
         self.provider = provider
         self.organizer = FileOrganizerAgent()

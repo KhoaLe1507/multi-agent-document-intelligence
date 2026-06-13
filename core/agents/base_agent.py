@@ -10,6 +10,7 @@ from google import genai
 from google.genai import types
 from pydantic import BaseModel
 
+from ..chains import render_prompt_template
 from ..config.settings import settings
 from ..exceptions.agent_errors import LLMCommunicationError, SystemConfigError
 from ..utils.logger import agent_logger
@@ -95,14 +96,17 @@ class BaseAgent:
 
     def _structured_system_prompt(self, system_prompt: str, response_model: Type[T]) -> str:
         field_names = ", ".join(response_model.model_fields.keys())
-        return (
-            f"{system_prompt}\n\n"
+        return render_prompt_template(
+            "{system_prompt}\n\n"
             "CRITICAL OUTPUT RULES:\n"
             "- Return exactly one valid JSON object and nothing else.\n"
             "- Do not use markdown fences, headings, YAML, or prose outside JSON.\n"
             "- Quote every JSON property name and every string value.\n"
-            f"- The JSON object must match this Pydantic model: {response_model.__name__}.\n"
-            f"- Required/allowed top-level keys: {field_names}."
+            "- The JSON object must match this Pydantic model: {model_name}.\n"
+            "- Required/allowed top-level keys: {field_names}.",
+            system_prompt=system_prompt,
+            model_name=response_model.__name__,
+            field_names=field_names,
         )
 
     def _parse_structured_response(self, response: Any, response_model: Type[T]) -> T:
