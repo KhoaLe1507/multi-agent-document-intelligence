@@ -212,4 +212,6 @@ __marimo__/
 logs/traces/*.md
 
 # Custom Cache
-cache/
+cache/
+
+data/
