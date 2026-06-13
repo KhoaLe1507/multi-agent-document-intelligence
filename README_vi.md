@@ -1,12 +1,12 @@
 # 🌟 OCR Multi-Agents System
 
-Dự án này là hệ thống **Multi-Agent tự động hoàn toàn**, chuyên xử lý các tác vụ bóc tách tài liệu phức tạp, hỏi đáp (QA) và tự động phân loại thư mục (Organization). Hệ thống sử dụng Google Gemini Vision và structured output kết hợp với schema Pydantic, giúp nó hoạt động trơn tru trên mọi loại file: PDF, Hình ảnh Scan, và cả Table Excel.
+Dự án này là hệ thống **Multi-Agent tự động hoàn toàn**, chuyên xử lý các tác vụ bóc tách tài liệu phức tạp, hỏi đáp (QA) và tự động phân loại thư mục (Organization). Hệ thống sử dụng LangGraph để điều phối workflow có state, LangChain cho prompt utility, Google Gemini Vision và structured output kết hợp với schema Pydantic, giúp nó hoạt động trơn tru trên mọi loại file: PDF, Hình ảnh Scan, và cả Table Excel.
 
 ---
 
 ## 🏗 Kiến Trúc Hệ Thống & Tính Năng Cốt Lõi
 
-- **Tối ưu cực hạn (Multi-threading)**: Trọng tâm của hệ thống là `ThreadPoolExecutor`, cho phép các Agent băm nhỏ tài liệu và trích xuất thông tin song song, giúp vượt qua rào cản độ trễ mạng (Network Latency) thông thường.
+- **Điều phối stateful & đa luồng (LangGraph + Multi-threading)**: Hệ thống dùng LangGraph để điều phối agent nodes, conditional transitions và review loops; `ThreadPoolExecutor` được dùng trong các node rút keyword/trích xuất bằng chứng để chạy song song khi độ trễ mạng là điểm nghẽn.
 - **Bộ nhớ đệm Toàn cục (CacheManager)**: Lịch sử đọc chunk, kết quả ép kiểu (parse) và list từ khóa được lưu trữ chặt chẽ trong RAM (`[Cache HIT]`). Khi một file lặp lại (VD: một tập tài liệu quy chuẩn xuất hiện ở 5 câu hỏi khác nhau), hệ thống tốn 0 (không) API token và trả về kết quả trong chưa tới 1 mili-giây.
 - **Tự Sửa Lỗi (Self-Correction Review Loop)**: Trước khi chốt đáp án, tất cả kết quả đều được ném cho **ReviewerAgent** (Quan lớn thẩm định). Mọi sự kiện suy diễn phi logic hoặc phân loại vô lý đều sẽ bị đánh trượt và ép buộc hệ thống tự động suy luận lại dựa trên phản hồi lỗi.
 - **Phổ cập Hệ File (Universal Intake)**: Bộ xử lý không bị trói buộc ở Text. Nó phân tách Excel `.xlsx` thành Bảng Markdown nguyên bản, và tự động gọi API Vision để AI sử dụng "mắt người" phân tích với các loại file PDF rỗng text (Scanned JPG, v.v).
@@ -28,7 +28,7 @@ Dự án này là hệ thống **Multi-Agent tự động hoàn toàn**, chuyên
   - Tên file đính kèm với Metadata Keyword của chúng được gói gọn thành một danh sách gửi cho `FileOrganizerAgent`. Agent này so sánh chéo với Quy định thư mục của đề bài, ép kiểu dữ liệu thành danh sách Phân Lộ (JSON).
 - **Bước 4: Trọng tài Thẩm định (Self-Correction Loop):** 
   - `ReviewerAgent` đứng ngoài rà soát chéo Output của Agent tổ chức. Nếu nó phát hiện 1 file bị xếp nhầm thư mục (VD: hóa đơn xếp vào thư mục thiết kế), nó sẽ từ chối (`is_acceptable = False`) và cung cấp chuỗi lý do vi phạm (`issues`).
-  - Vòng lặp `while` lúc này đẩy chuỗi lỗi lên `FileOrganizerAgent` dưới dạng `[LƯU Ý TỪ REVIEWER LẦN TRƯỚC]:...`. Agent Tổ Chức lúc này giác ngộ và sửa đáp án. Quá trình bọc lót này giới hạn tối đa 2 lần.
+  - LangGraph conditional edges lúc này route chuỗi lỗi quay lại `FileOrganizerAgent` dưới dạng `[LƯU Ý TỪ REVIEWER LẦN TRƯỚC]:...`. Agent Tổ Chức lúc này giác ngộ và sửa đáp án. Quá trình bọc lót này giới hạn tối đa 2 lần.
 - **Bước 5: Báo Cáo:** Chốt danh sách cuối cùng và ghi kèm toàn bộ Dòng Suy Nghĩ (Thought Log) vào file submission local.
 
 ### 2. Luồng Hỏi Đáp Tiên Tiến (QA Extraction Workflow)

@@ -1,6 +1,6 @@
 # 🌟 OCR Multi-Agents System
 
-This project is a fully automated **Multi-Agent system** designed for complex document handling, data extraction, question answering (QA), and automated file organization. It uses Google Gemini vision and structured outputs combined with Pydantic schemas to process PDFs, scan images, and spreadsheets effectively.
+This project is a fully automated **Multi-Agent system** designed for complex document handling, data extraction, question answering (QA), and automated file organization. It uses LangGraph for stateful workflow orchestration, LangChain prompt utilities, and Google Gemini vision with Pydantic structured outputs to process PDFs, scan images, and spreadsheets effectively.
 
 ---
 
@@ -8,7 +8,7 @@ This project is a fully automated **Multi-Agent system** designed for complex do
 
 The system operates continuously as an autonomous AI engine rather than a static script. It boasts robust enterprise-grade features:
 
-- **Parallel Processing Engine**: Deeply integrates `ThreadPoolExecutor` to shatter network latency bottlenecks. Agents fractionate documents and extract intelligence in parallel multiple threads.
+- **Stateful Orchestration & Parallel Processing**: Uses LangGraph to coordinate agent nodes, conditional transitions, and review loops, while `ThreadPoolExecutor` runs keyword extraction and evidence extraction in parallel where latency matters.
 - **Global Memory (CacheManager)**: A centralized RAM cache repository. When a file is recognized again (as frequently happens across tasks), all the processed chunks, translations, and keywords are retrieved instantly (`[Cache HIT]`). This slashes redundant API token costs to **zero** and provides a practically 0ms latency boost.
 - **Self-Correction & Quality Assurance**: Outputs are strictly audited by the independent **ReviewerAgent**. If the agent catches contradictions, logical fallacies, or hallucinated facts, it halts the submission. The workflow then enters an iterative feedback loop, forcing the specific generator agents to correct their answers before finalizing.
 - **Universal Format Intake**: Flawlessly reads offline PDFs, converts Excel `.xlsx` sheets natively to Markdown Tables (processed without heavy Vision calls), and uses Visual Intelligence (Image API) dynamically for pure-image scans where text arrays fail.
@@ -23,7 +23,7 @@ The system operates continuously as an autonomous AI engine rather than a static
 - **Step 1: Parse & Cache Engine:** The system fetches attached data (`file_router`). Excel files become Markdown Tables, while PDFs form a matrix of `DocumentChunk`. The `CacheManager` jumps in—identifying if the files have already been dissected previously.
 - **Step 2: 360-Degree Keyword Scouting (Text & Vision):** The `ThreadPoolExecutor` dispatches multiple `KeywordExtractorAgent` instances simultaneously. Crucially, these instances can inject `image_base64` feeds dynamically; this allows pure-scan image files to still yield high-quality keywords in a matter of seconds. Keywords are instantly globally cached.
 - **Step 3: Smart Algorithmic Mapping:** The `FileOrganizerAgent` takes the entire summarized bundle (File Names + Keywords) alongside the strict user rulebook, structuring its neural choices down into a concrete JSON mapping schema.
-- **Step 4: The Sentinel Loop (Self-Correction):** The strict `ReviewerAgent` sweeps the outputs. If the rationale behind placing "design_blueprint.pdf" inside the "Invoices" folder lacks logic, it throws an error list (`issues`). The workflow traps this failure in a `while` loop, forcefully feeding `[LƯU Ý TỪ REVIEWER LẦN TRƯỚC]` back to the `FileOrganizerAgent` up to 2 times to correct the mistake.
+- **Step 4: The Sentinel Loop (Self-Correction):** The strict `ReviewerAgent` sweeps the outputs. If the rationale behind placing "design_blueprint.pdf" inside the "Invoices" folder lacks logic, it throws an error list (`issues`). LangGraph conditional edges route this failure back to the `FileOrganizerAgent`, feeding `[LƯU Ý TỪ REVIEWER LẦN TRƯỚC]` up to 2 times to correct the mistake.
 - **Step 5: Final Persistence:** Successfully formulated mapping decisions and Thought Logs are written to the local submissions JSONL file.
 
 ### 2. Question Answering (QA) Workflow
